@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Allow APK files to be committed
+!/build/app/outputs/flutter-apk/app-release.apk
+
 # Symbolication related
 app.*.symbols
 
