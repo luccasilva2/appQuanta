@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
   bool _isDarkMode = false;
   bool _isAboutExpanded = false;
 
@@ -22,47 +27,196 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // User Info Section
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Theme.of(context).colorScheme.primary,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.shadow.withOpacity(0.2),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
+              StreamBuilder<User?>(
+                stream: _authService.authStateChanges,
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return Center(
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            // Show image picker options
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return SafeArea(
+                                  child: Wrap(
+                                    children: <Widget>[
+                                      ListTile(
+                                        leading: Icon(PhosphorIcons.image()),
+                                        title: const Text('Galeria'),
+                                        onTap: () async {
+                                          Navigator.of(context).pop();
+                                          final image = await _authService
+                                              .pickImageFromGallery();
+                                          if (image != null &&
+                                              user != null &&
+                                              mounted) {
+                                            try {
+                                              await _authService
+                                                  .uploadProfileImage(
+                                                    user.uid,
+                                                    user.email!,
+                                                    image,
+                                                  );
+                                              if (mounted) {
+                                                setState(() {});
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Foto de perfil atualizada!',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Erro ao atualizar foto: $e',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
+                                      ),
+                                      if (!kIsWeb)
+                                        ListTile(
+                                          leading: Icon(PhosphorIcons.camera()),
+                                          title: const Text('Câmera'),
+                                          onTap: () async {
+                                            Navigator.of(context).pop();
+                                            final image = await _authService
+                                                .pickImageFromCamera();
+                                            if (image != null &&
+                                                user != null &&
+                                                mounted) {
+                                              try {
+                                                await _authService
+                                                    .uploadProfileImage(
+                                                      user.uid,
+                                                      user.email!,
+                                                      image,
+                                                    );
+                                                if (mounted) {
+                                                  setState(() {});
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Foto de perfil atualizada!',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Erro ao atualizar foto: $e',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                        ),
+                                      if (kIsWeb)
+                                        ListTile(
+                                          leading: Icon(
+                                            PhosphorIcons.warning(),
+                                          ),
+                                          title: const Text('Câmera'),
+                                          subtitle: const Text(
+                                            'Não suportado na web',
+                                          ),
+                                          enabled: false,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Theme.of(context).colorScheme.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.shadow.withOpacity(0.2),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: user?.photoURL != null
+                                ? ClipOval(
+                                    child: Image.network(
+                                      user!.photoURL!,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Icon(
+                                              PhosphorIcons.user(),
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary,
+                                              size: 50,
+                                            );
+                                          },
+                                    ),
+                                  )
+                                : Icon(
+                                    PhosphorIcons.user(),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimary,
+                                    size: 50,
+                                  ),
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        PhosphorIcons.user(),
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        size: 50,
-                      ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          user?.displayName ?? 'Usuário AppQuanta',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          user?.email ?? 'usuario@appquanta.com',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.8),
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Usuário AppQuanta',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'usuario@appquanta.com',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 40),
 
