@@ -15,7 +15,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   final TextEditingController _appNameController = TextEditingController();
   String _selectedIcon = 'app';
   Color _selectedColor = const Color(0xFF007BFF);
-  List<String> _selectedScreens = ['Home', 'About'];
+  final List<String> _selectedScreens = ['Home', 'About'];
 
   final List<Map<String, dynamic>> _icons = [
     {'name': 'app', 'icon': PhosphorIcons.appWindow()},
@@ -410,7 +410,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
                         decoration: BoxDecoration(
                           color: index <= _currentStep
                               ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.surfaceVariant,
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),

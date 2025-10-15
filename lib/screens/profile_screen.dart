@@ -124,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // Here you would typically change the theme
                           // For now, we'll just update the state
                         },
-                        activeColor: const Color(0xFF007BFF),
+                        activeThumbColor: const Color(0xFF007BFF),
                       ),
                     ],
                   ),
