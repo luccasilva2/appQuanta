@@ -4,7 +4,9 @@ AppQuanta é um aplicativo Flutter inovador para criação e gerenciamento de ap
 
 ## 📥 Download APK
 
-[![Download APK](https://img.shields.io/badge/Download-APK-blue?style=for-the-badge&logo=android)](build/app/outputs/flutter-apk/app-release.apk)
+<a href="build/app/outputs/flutter-apk/app-release.apk" download>
+  <img src="https://img.shields.io/badge/Download-APK-blue?style=for-the-badge&logo=android" alt="Download APK">
+</a>
 
 **Clique no botão acima para baixar o APK diretamente no seu dispositivo Android.**
 
