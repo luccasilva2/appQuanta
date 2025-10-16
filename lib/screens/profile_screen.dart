@@ -3,7 +3,39 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:math';
+import 'dart:ui';
 import '../auth_service.dart';
+
+class ParticlePainter extends CustomPainter {
+  final double animationValue;
+
+  ParticlePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.blue.withOpacity(0.1)
+      ..style = PaintingStyle.fill;
+
+    final random = Random(42); // Fixed seed for consistent pattern
+
+    for (int i = 0; i < 20; i++) {
+      final x = random.nextDouble() * size.width;
+      final y = random.nextDouble() * size.height;
+      final radius = 2 + random.nextDouble() * 3;
+
+      // Animate opacity based on animation value
+      final opacity = (sin(animationValue * 2 * pi + i) + 1) / 2 * 0.3;
+      paint.color = Colors.blue.withOpacity(opacity);
+
+      canvas.drawCircle(Offset(x, y), radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,22 +44,68 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   final AuthService _authService = AuthService();
   bool _isDarkMode = false;
   bool _isAboutExpanded = false;
+  late AnimationController _particleController;
+  late Animation<double> _particleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _particleController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _particleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _particleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _particleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Info Section
-              StreamBuilder<User?>(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Particle Animation Background
+            AnimatedBuilder(
+              animation: _particleAnimation,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: ParticlePainter(_particleAnimation.value),
+                  size: Size(MediaQuery.of(context).size.width, MediaQuery.of(context).size.height),
+                );
+              },
+            ),
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User Info Section
+                    StreamBuilder<User?>(
                 stream: _authService.authStateChanges,
                 builder: (context, snapshot) {
                   final user = snapshot.data;
@@ -155,8 +233,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
                           },
                           child: Container(
-                            width: 100,
-                            height: 100,
+                            width: 120,
+                            height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Theme.of(context).colorScheme.primary,
@@ -164,9 +242,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 BoxShadow(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.shadow.withOpacity(0.2),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 8),
+                                  ).colorScheme.shadow.withOpacity(0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
                                 ),
                               ],
                             ),
@@ -174,8 +259,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? ClipOval(
                                     child: Image.network(
                                       user!.photoURL!,
-                                      width: 100,
-                                      height: 100,
+                                      width: 120,
+                                      height: 120,
                                       fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) {
@@ -184,7 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               color: Theme.of(
                                                 context,
                                               ).colorScheme.onPrimary,
-                                              size: 50,
+                                              size: 60,
                                             );
                                           },
                                     ),
@@ -194,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.onPrimary,
-                                    size: 50,
+                                    size: 60,
                                   ),
                           ),
                         ),
@@ -227,11 +312,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Settings Button
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/settings');
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          PhosphorIcons.gear(),
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Configurações Avançadas',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                      Icon(
+                        PhosphorIcons.caretRight(),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Dark Mode Toggle
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: Theme.of(
@@ -292,7 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(
                       context,
-                    ).colorScheme.surface.withOpacity(0.9),
+                    ).colorScheme.surface.withOpacity(0.8),
                     foregroundColor: Theme.of(context).colorScheme.onSurface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -393,6 +534,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context,
                     ).colorScheme.onSurface.withOpacity(0.6),
                   ),
+                ),
+              ),
+                  ],
                 ),
               ),
             ],

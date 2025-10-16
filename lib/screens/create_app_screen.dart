@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:ui';
+import 'package:lottie/lottie.dart';
 
 class CreateAppScreen extends StatefulWidget {
   const CreateAppScreen({super.key});
@@ -8,14 +12,23 @@ class CreateAppScreen extends StatefulWidget {
   State<CreateAppScreen> createState() => _CreateAppScreenState();
 }
 
-class _CreateAppScreenState extends State<CreateAppScreen> {
-  int _currentStep = 0;
-  final int _totalSteps = 4;
+class _CreateAppScreenState extends State<CreateAppScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _slideAnimation;
 
   final TextEditingController _appNameController = TextEditingController();
+  final TextEditingController _appDescriptionController =
+      TextEditingController();
   String _selectedIcon = 'app';
-  Color _selectedColor = const Color(0xFF007BFF);
+  Color _selectedColor = const Color(0xFF4E9FFF);
   final List<String> _selectedScreens = ['Home', 'About'];
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isGenerating = false;
 
   final List<Map<String, dynamic>> _icons = [
     {'name': 'app', 'icon': PhosphorIcons.appWindow()},
@@ -25,7 +38,7 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   ];
 
   final List<Color> _colors = [
-    const Color(0xFF007BFF), // Blue
+    const Color(0xFF4E9FFF), // Electric Blue
     const Color(0xFF28A745), // Green
     const Color(0xFFDC3545), // Red
     const Color(0xFFFFC107), // Yellow
@@ -42,336 +55,82 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation = Tween<double>(begin: 20.0, end: 0.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
   void dispose() {
+    _animationController.dispose();
     _appNameController.dispose();
+    _appDescriptionController.dispose();
     super.dispose();
   }
 
-  void _nextStep() {
-    if (_currentStep < _totalSteps - 1) {
-      setState(() {
-        _currentStep++;
+  Future<void> _generateApp() async {
+    if (_appNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, insira um nome para o app')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      // Simulate generation delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Save to Firestore
+      await _firestore.collection('apps').add({
+        'name': _appNameController.text.trim(),
+        'description': _appDescriptionController.text.trim(),
+        'icon': _selectedIcon,
+        'color': _selectedColor.value,
+        'screens': _selectedScreens,
+        'userId': user.uid,
+        'status': 'Em construção',
+        'createdAt': FieldValue.serverTimestamp(),
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App criado com sucesso!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao criar app: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
     }
-  }
-
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() {
-        _currentStep--;
-      });
-    }
-  }
-
-  Widget _buildStepContent() {
-    switch (_currentStep) {
-      case 0:
-        return _buildNameAndIconStep();
-      case 1:
-        return _buildThemeAndColorsStep();
-      case 2:
-        return _buildScreensStep();
-      case 3:
-        return _buildFinalizationStep();
-      default:
-        return Container();
-    }
-  }
-
-  Widget _buildNameAndIconStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Nome e Ícone do App',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 24),
-        TextField(
-          controller: _appNameController,
-          decoration: InputDecoration(
-            labelText: 'Nome do App',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Selecione um ícone:',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: _icons.map((iconData) {
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedIcon = iconData['name'];
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: _selectedIcon == iconData['name']
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                      : Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _selectedIcon == iconData['name']
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  iconData['icon'],
-                  size: 32,
-                  color: _selectedIcon == iconData['name']
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildThemeAndColorsStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tema e Cores',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Selecione uma cor principal:',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: _colors.map((color) {
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedColor = color;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _selectedColor == color
-                        ? Colors.white
-                        : Colors.transparent,
-                    width: 3,
-                  ),
-                  boxShadow: _selectedColor == color
-                      ? [
-                          BoxShadow(
-                            color: color.withOpacity(0.4),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          )
-                        ]
-                      : null,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: _selectedColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Text(
-              'Pré-visualização',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScreensStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Telas e Estrutura',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Selecione os modelos de tela:',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _availableScreens.map((screen) {
-            final isSelected = _selectedScreens.contains(screen);
-            return FilterChip(
-              label: Text(screen),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedScreens.add(screen);
-                  } else {
-                    _selectedScreens.remove(screen);
-                  }
-                });
-              },
-              backgroundColor: Theme.of(context).cardColor,
-              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              checkmarkColor: Theme.of(context).colorScheme.primary,
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Pré-visualização das telas selecionadas:',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 200,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _selectedScreens.length,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 150,
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    _selectedScreens[index],
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFinalizationStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Finalização',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: _selectedColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      _icons.firstWhere((icon) => icon['name'] == _selectedIcon)['icon'],
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _appNameController.text.isEmpty ? 'Nome do App' : _appNameController.text,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        Text(
-                          '${_selectedScreens.length} telas selecionadas',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Save prototype logic here
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Protótipo salvo com sucesso!')),
-                  );
-                  Navigator.pop(context);
-                },
-                icon: Icon(PhosphorIcons.floppyDisk()),
-                label: const Text('Salvar Protótipo'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   @override
@@ -384,81 +143,442 @@ class _CreateAppScreenState extends State<CreateAppScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // Stepper indicator
-                Row(
-                  children: List.generate(_totalSteps, (index) {
-                    return Expanded(
-                      child: Container(
-                        height: 4,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: AnimatedBuilder(
+            animation: _slideAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, _slideAnimation.value),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
+                        'Crie seu novo aplicativo',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // App Name
+                      Container(
                         decoration: BoxDecoration(
-                          color: index <= _currentStep
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(16),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: TextField(
+                            controller: _appNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nome do App',
+                              hintText: 'Ex: Meu App Incrível',
+                              prefixIcon: Icon(PhosphorIcons.textAa()),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                            ),
+                          ),
                         ),
                       ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 24),
-                // Step content
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0.1, 0),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
+                      const SizedBox(height: 24),
+
+                      // App Description
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.2),
+                            width: 1,
+                          ),
                         ),
-                      );
-                    },
-                    child: SingleChildScrollView(
-                      key: ValueKey<int>(_currentStep),
-                      child: _buildStepContent(),
-                    ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: TextField(
+                            controller: _appDescriptionController,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              labelText: 'Descrição (opcional)',
+                              hintText:
+                                  'Descreva brevemente o propósito do seu app',
+                              prefixIcon: Icon(PhosphorIcons.article()),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Icon Selection
+                      Text(
+                        'Ícone do App',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: _icons.map((iconData) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedIcon = iconData['name'];
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: _selectedIcon == iconData['name']
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.1)
+                                    : Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: _selectedIcon == iconData['name']
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.outline.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                iconData['icon'],
+                                size: 32,
+                                color: _selectedIcon == iconData['name']
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Color Selection
+                      Text(
+                        'Cor Principal',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: _colors.map((color) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedColor = color;
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _selectedColor == color
+                                      ? Colors.white
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                                boxShadow: _selectedColor == color
+                                    ? [
+                                        BoxShadow(
+                                          color: color.withOpacity(0.4),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Screens Selection
+                      Text(
+                        'Telas do App',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: _availableScreens.map((screen) {
+                          final isSelected = _selectedScreens.contains(screen);
+                          return FilterChip(
+                            label: Text(screen),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedScreens.add(screen);
+                                } else {
+                                  _selectedScreens.remove(screen);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Generate Button
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: double.infinity,
+                        height: 60,
+                        child: InkWell(
+                          onTap: _isGenerating ? null : _generateApp,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: _isGenerating
+                                  ? null
+                                  : const LinearGradient(
+                                      colors: [
+                                        Color(0xFF4E9FFF),
+                                        Color(0xFF00D4FF),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                              color: _isGenerating
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withOpacity(0.7)
+                                  : null,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: _isGenerating
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF4E9FFF,
+                                        ).withOpacity(0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _isGenerating
+                                    ? SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: Lottie.asset(
+                                          'assets/animations/loading.json',
+                                          fit: BoxFit.contain,
+                                        ),
+                                      )
+                                    : Icon(
+                                        PhosphorIcons.sparkle(),
+                                        color: Colors.white,
+                                      ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _isGenerating
+                                      ? 'Criando estrutura...'
+                                      : 'Gerar Estrutura',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Recent Projects Section
+                      StreamBuilder<QuerySnapshot>(
+                        stream: _firestore
+                            .collection('apps')
+                            .where('userId', isEqualTo: _auth.currentUser?.uid)
+                            .orderBy('createdAt', descending: true)
+                            .limit(3)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Meus Projetos Recentes',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 120,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: snapshot.data!.docs.length,
+                                  itemBuilder: (context, index) {
+                                    final app =
+                                        snapshot.data!.docs[index].data()
+                                            as Map<String, dynamic>;
+                                    return AnimatedBuilder(
+                                      animation: _animationController,
+                                      builder: (context, child) {
+                                        final delay = index * 0.1;
+                                        final animation =
+                                            Tween<double>(
+                                              begin: 0.0,
+                                              end: 1.0,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: _animationController,
+                                                curve: Interval(
+                                                  delay,
+                                                  delay + 0.3,
+                                                  curve: Curves.easeOut,
+                                                ),
+                                              ),
+                                            );
+                                        return Transform.translate(
+                                          offset: Offset(
+                                            50 * (1 - animation.value),
+                                            0,
+                                          ),
+                                          child: Opacity(
+                                            opacity: animation.value,
+                                            child: Container(
+                                              width: 200,
+                                              margin: const EdgeInsets.only(
+                                                right: 16,
+                                              ),
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.surface,
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                border: Border.all(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .outline
+                                                      .withOpacity(0.3),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 32,
+                                                        height: 32,
+                                                        decoration: BoxDecoration(
+                                                          color: Color(
+                                                            app['color'] ??
+                                                                0xFF4E9FFF,
+                                                          ).withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: Icon(
+                                                          _icons.firstWhere(
+                                                            (icon) =>
+                                                                icon['name'] ==
+                                                                app['icon'],
+                                                            orElse: () =>
+                                                                _icons.first,
+                                                          )['icon'],
+                                                          size: 16,
+                                                          color: Color(
+                                                            app['color'] ??
+                                                                0xFF4E9FFF,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Text(
+                                                          app['name'] ?? 'App',
+                                                          style: Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    app['status'] ??
+                                                        'Em construção',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                // Navigation buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_currentStep > 0)
-                      ElevatedButton(
-                        onPressed: _previousStep,
-                        child: const Text('Anterior'),
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    ElevatedButton(
-                      onPressed: _currentStep < _totalSteps - 1 ? _nextStep : null,
-                      child: Text(_currentStep < _totalSteps - 1 ? 'Próximo' : 'Finalizar'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

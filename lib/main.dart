@@ -8,6 +8,7 @@ import 'screens/home_screen.dart';
 import 'screens/create_app_screen.dart';
 import 'screens/my_apps_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/main': (context) => const MainScreen(),
         '/create': (context) => const CreateAppScreen(),
+        '/settings': (context) => const SettingsScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
       },
@@ -58,6 +60,12 @@ class MyApp extends StatelessWidget {
           case '/register':
             return PageTransition(
               child: const RegisterScreen(),
+              type: PageTransitionType.fade,
+              duration: const Duration(milliseconds: 300),
+            );
+          case '/settings':
+            return PageTransition(
+              child: const SettingsScreen(),
               type: PageTransitionType.fade,
               duration: const Duration(milliseconds: 300),
             );
