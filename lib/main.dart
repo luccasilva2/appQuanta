@@ -18,8 +18,21 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void _setThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,26 +41,25 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       home: const LoginScreen(),
-      routes: {
-        '/main': (context) => const MainScreen(),
-        '/create': (context) => const CreateAppScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-      },
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/main':
             return PageTransition(
-              child: const MainScreen(),
+              child: MainScreen(onThemeChanged: _setThemeMode),
               type: PageTransitionType.fade,
               duration: const Duration(milliseconds: 300),
             );
           case '/create':
             return PageTransition(
               child: const CreateAppScreen(),
+              type: PageTransitionType.fade,
+              duration: const Duration(milliseconds: 300),
+            );
+          case '/my-apps': // Added missing route
+            return PageTransition(
+              child: const MyAppsScreen(),
               type: PageTransitionType.fade,
               duration: const Duration(milliseconds: 300),
             );
@@ -78,7 +90,9 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final Function(ThemeMode) onThemeChanged;
+
+  const MainScreen({super.key, required this.onThemeChanged});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -87,10 +101,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const HomeScreen(),
-    const MyAppsScreen(),
-    const ProfileScreen(),
+    const MyAppsScreen(), // Ensure MyAppsScreen is in the list
+    ProfileScreen(onThemeChanged: widget.onThemeChanged),
   ];
 
   void _onTabTapped(int index) {

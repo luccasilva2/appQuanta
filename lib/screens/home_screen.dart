@@ -36,12 +36,34 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     _animationController.forward();
+    _addExampleAppIfEmpty(); // Call the new method
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _addExampleAppIfEmpty() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final querySnapshot = await _firestore
+        .collection('apps')
+        .where('userId', isEqualTo: user.uid)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isEmpty) {
+      await _firestore.collection('apps').add({
+        'name': 'Meu Primeiro App',
+        'userId': user.uid,
+        'createdAt': Timestamp.now(),
+        'screens': ['Tela Inicial', 'Configurações'],
+        'status': 'Em desenvolvimento',
+      });
+    }
   }
 
   String _getGreeting() {
@@ -202,26 +224,34 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            PhosphorIcons.puzzlePiece(),
-            size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhum app criado ainda',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Comece criando seu primeiro app!',
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: Builder(
+        builder: (BuildContext innerContext) {
+          final theme = Theme.of(innerContext);
+          final colorScheme = theme.colorScheme;
+          final textTheme = theme.textTheme;
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                PhosphorIcons.puzzlePiece(),
+                size: 64,
+                color: colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nenhum app criado ainda',
+                style: textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Comece criando seu primeiro app!',
+                style: textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -261,95 +291,95 @@ class _AppCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                PhosphorIcons.appWindow(),
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    app['name'] ?? 'App sem nome',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+      child: Builder(
+        builder: (BuildContext innerContext) {
+          final theme = Theme.of(innerContext);
+          final colorScheme = theme.colorScheme;
+          final textTheme = theme.textTheme;
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  child: Icon(
+                    PhosphorIcons.appWindow(),
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appType,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                        app['name'] ?? 'App sem nome',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            appType,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colorScheme.onSurface.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            formattedDate,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Container(
-                        width: 4,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.3),
-                          shape: BoxShape.circle,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formattedDate,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          app['status'] ?? 'Em construção',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      app['status'] ?? 'Em construção',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                Icon(
+                  PhosphorIcons.caretRight(),
+                  color: colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ],
             ),
-            Icon(
-              PhosphorIcons.caretRight(),
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
