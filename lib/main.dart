@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav_bar.dart';
@@ -11,6 +12,7 @@ import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'providers/app_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,55 +38,58 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AppQuanta',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
-      home: const LoginScreen(),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/main':
-            return PageTransition(
-              child: MainScreen(onThemeChanged: _setThemeMode),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          case '/create':
-            return PageTransition(
-              child: const CreateAppScreen(),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          case '/my-apps': // Added missing route
-            return PageTransition(
-              child: const MyAppsScreen(),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          case '/login':
-            return PageTransition(
-              child: const LoginScreen(),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          case '/register':
-            return PageTransition(
-              child: const RegisterScreen(),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          case '/settings':
-            return PageTransition(
-              child: const SettingsScreen(),
-              type: PageTransitionType.fade,
-              duration: const Duration(milliseconds: 300),
-            );
-          default:
-            return null;
-        }
-      },
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AppProvider())],
+      child: MaterialApp(
+        title: 'AppQuanta',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: _themeMode,
+        home: const LoginScreen(),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/main':
+              return PageTransition(
+                child: MainScreen(onThemeChanged: _setThemeMode),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            case '/create':
+              return PageTransition(
+                child: const CreateAppScreen(),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            case '/my-apps': // Added missing route
+              return PageTransition(
+                child: const MyAppsScreen(),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            case '/login':
+              return PageTransition(
+                child: const LoginScreen(),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            case '/register':
+              return PageTransition(
+                child: const RegisterScreen(),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            case '/settings':
+              return PageTransition(
+                child: const SettingsScreen(),
+                type: PageTransitionType.fade,
+                duration: const Duration(milliseconds: 300),
+              );
+            default:
+              return null;
+          }
+        },
+      ),
     );
   }
 }
