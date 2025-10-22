@@ -1,139 +1,106 @@
 import 'package:flutter/material.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
-import 'theme/app_theme.dart';
-import 'widgets/bottom_nav_bar.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/create_app_screen.dart';
 import 'screens/my_apps_screen.dart';
-import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
-import 'providers/app_provider.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inicialização do Supabase
   await Supabase.initialize(
     url: 'https://keyazyprdifuryjxdqrc.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtleWF6eXByZGlmdXJ5anhkcXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNzM1ODUsImV4cCI6MjA3NjY0OTU4NX0.kDP3tb3M2CwqM184PnMTounMYzW8hPpj6v0NjGO7uy0',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtleWF6eXByZGlmdXJ5anhkcXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNzM1ODUsImV4cCI6MjA3NjY0OTU4NX0.kDP3tb3M2CwqM184PnMTounMYzW8hPpj6v0NjGO7uy0',
   );
+
+  runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void _setThemeMode(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AppProvider())],
-      child: MaterialApp(
-        title: 'AppQuanta',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: _themeMode,
-        home: const LoginScreen(),
-        onGenerateRoute: (settings) {
-          switch (settings.name) {
-            case '/main':
-              return PageTransition(
-                child: MainScreen(onThemeChanged: _setThemeMode),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            case '/create':
-              return PageTransition(
-                child: const CreateAppScreen(),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            case '/my-apps': // Added missing route
-              return PageTransition(
-                child: const MyAppsScreen(),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            case '/login':
-              return PageTransition(
-                child: const LoginScreen(),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            case '/register':
-              return PageTransition(
-                child: const RegisterScreen(),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            case '/settings':
-              return PageTransition(
-                child: const SettingsScreen(),
-                type: PageTransitionType.fade,
-                duration: const Duration(milliseconds: 300),
-              );
-            default:
-              return null;
-          }
-        },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'AppQuanta',
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.white,
       ),
+      home: const SupabaseInitializer(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/login':
+            return MaterialPageRoute(builder: (context) => const LoginScreen());
+          case '/register':
+            return MaterialPageRoute(
+              builder: (context) => const RegisterScreen(),
+            );
+          case '/main':
+            return MaterialPageRoute(builder: (context) => const HomeScreen());
+          case '/create':
+            return MaterialPageRoute(
+              builder: (context) => const CreateAppScreen(),
+            );
+          case '/my-apps':
+            return MaterialPageRoute(
+              builder: (context) => const MyAppsScreen(),
+            );
+          case '/settings':
+            return MaterialPageRoute(
+              builder: (context) => const SettingsScreen(),
+            );
+          default:
+            return null;
+        }
+      },
     );
   }
 }
 
-class MainScreen extends StatefulWidget {
-  final Function(ThemeMode) onThemeChanged;
-
-  const MainScreen({super.key, required this.onThemeChanged});
+class SupabaseInitializer extends StatefulWidget {
+  const SupabaseInitializer({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<SupabaseInitializer> createState() => _SupabaseInitializerState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+class _SupabaseInitializerState extends State<SupabaseInitializer> {
+  bool _isReady = false;
 
-  List<Widget> get _screens => [
-    const HomeScreen(),
-    const MyAppsScreen(), // Ensure MyAppsScreen is in the list
-    ProfileScreen(onThemeChanged: widget.onThemeChanged),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _initSupabase();
+  }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+  Future<void> _initSupabase() async {
+    try {
+      // Testa a conexão com a tabela users
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('id')
+          .limit(1);
+      debugPrint(
+        'Conexão com Supabase estabelecida: ${response.length} registros encontrados',
+      );
+    } catch (e) {
+      debugPrint('Erro ao conectar Supabase: $e');
+    } finally {
+      setState(() => _isReady = true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: _screens[_currentIndex],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-      ),
-    );
+    if (!_isReady) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return const LoginScreen();
   }
 }
