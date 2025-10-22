@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:ui';
 import 'package:lottie/lottie.dart';
 
@@ -25,8 +24,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   Color _selectedColor = const Color(0xFF4E9FFF);
   final List<String> _selectedScreens = ['Home', 'About'];
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   bool _isGenerating = false;
 
@@ -94,22 +92,22 @@ class _CreateAppScreenState extends State<CreateAppScreen>
     });
 
     try {
-      final user = _auth.currentUser;
+      final user = _supabase.auth.currentUser;
       if (user == null) return;
 
       // Simulate generation delay
       await Future.delayed(const Duration(seconds: 2));
 
-      // Save to Firestore
-      await _firestore.collection('apps').add({
+      // Save to Supabase
+      await _supabase.from('apps').insert({
         'name': _appNameController.text.trim(),
         'description': _appDescriptionController.text.trim(),
         'icon': _selectedIcon,
         'color': _selectedColor.value,
         'screens': _selectedScreens,
-        'userId': user.uid,
+        'user_id': user.id,
         'status': 'Em construção',
-        'createdAt': FieldValue.serverTimestamp(),
+        'created_at': DateTime.now().toIso8601String(),
       });
 
       if (mounted) {
@@ -420,16 +418,15 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                       const SizedBox(height: 32),
 
                       // Recent Projects Section
-                      StreamBuilder<QuerySnapshot>(
-                        stream: _firestore
-                            .collection('apps')
-                            .where('userId', isEqualTo: _auth.currentUser?.uid)
-                            .orderBy('createdAt', descending: true)
-                            .limit(3)
-                            .snapshots(),
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _supabase
+                            .from('apps')
+                            .select()
+                            .eq('user_id', _supabase.auth.currentUser?.id ?? '')
+                            .order('created_at', ascending: false)
+                            .limit(3),
                         builder: (context, snapshot) {
-                          if (!snapshot.hasData ||
-                              snapshot.data!.docs.isEmpty) {
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
                             return const SizedBox.shrink();
                           }
 
@@ -445,11 +442,9 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                 height: 120,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
-                                  itemCount: snapshot.data!.docs.length,
+                                  itemCount: snapshot.data!.length,
                                   itemBuilder: (context, index) {
-                                    final app =
-                                        snapshot.data!.docs[index].data()
-                                            as Map<String, dynamic>;
+                                    final app = snapshot.data![index];
                                     return AnimatedBuilder(
                                       animation: _animationController,
                                       builder: (context, child) {

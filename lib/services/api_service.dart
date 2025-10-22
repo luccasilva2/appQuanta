@@ -1,18 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = 'https://appquanta-server.onrender.com/api/v1';
 
-  // Get JWT token from Firebase Auth
+  // Get JWT token from Supabase Auth
   Future<String?> _getToken() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-
-    final idToken = await user.getIdToken();
-    return idToken;
+    final session = Supabase.instance.client.auth.currentSession;
+    return session?.accessToken;
   }
 
   // Cache JWT token locally

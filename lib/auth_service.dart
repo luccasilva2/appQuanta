@@ -1,61 +1,56 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   // Get current user
-  User? get currentUser => _auth.currentUser;
+  User? get currentUser => _supabase.auth.currentUser;
 
   // Stream of auth state changes
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
   // Register with email and password
-  Future<UserCredential> registerWithEmailAndPassword(
+  Future<AuthResponse> registerWithEmailAndPassword(
     String email,
     String password,
     String name,
   ) async {
     try {
-      UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(email: email, password: password);
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'display_name': name},
+      );
 
-      // Update display name
-      await userCredential.user?.updateDisplayName(name);
+      if (response.user != null) {
+        // Save user data to database
+        await _supabase.from('users').insert({
+          'id': response.user!.id,
+          'email': email,
+          'display_name': name,
+          'created_at': DateTime.now().toIso8601String(),
+          'photo_url': null,
+        });
+      }
 
-      // Save user data to Firestore
-      await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'email': email,
-        'displayName': name,
-        'createdAt': FieldValue.serverTimestamp(),
-        'photoURL': null,
-      });
-
-      return userCredential;
+      return response;
     } catch (e) {
       throw Exception('Registration failed: $e');
     }
   }
 
   // Sign in with email and password
-  Future<UserCredential> signInWithEmailAndPassword(
+  Future<AuthResponse> signInWithEmailAndPassword(
     String email,
     String password,
   ) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      // Note: Firestore write is removed to avoid permission issues
-      // You can add Firestore writes after setting up proper security rules
-
-      return userCredential;
+      return response;
     } catch (e) {
       throw Exception('Login failed: $e');
     }
@@ -63,80 +58,31 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
-    await _auth.signOut();
+    await _supabase.auth.signOut();
   }
 
   // Check if user is logged in
   bool isLoggedIn() {
-    return _auth.currentUser != null;
+    return _supabase.auth.currentUser != null;
   }
 
-  // Get user data from Firestore
-  Future<DocumentSnapshot> getUserData(String uid) async {
-    return await _firestore.collection('users').doc(uid).get();
+  // Get user data from database
+  Future<Map<String, dynamic>?> getUserData(String uid) async {
+    try {
+      final response = await _supabase
+          .from('users')
+          .select()
+          .eq('id', uid)
+          .single();
+
+      return response;
+    } catch (e) {
+      return null;
+    }
   }
 
   // Update user data
   Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
-    await _firestore.collection('users').doc(uid).update(data);
-  }
-
-  // Upload profile image to Firebase Storage
-  Future<String?> uploadProfileImage(
-    String userId,
-    String userEmail,
-    XFile imageFile,
-  ) async {
-    try {
-      // Create a unique filename using user ID and timestamp
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_images')
-          .child(userId)
-          .child('profile_$timestamp.jpg');
-
-      final uploadTask = await storageRef.putFile(File(imageFile.path));
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
-
-      // Update user photo URL in Firebase Auth
-      await _auth.currentUser?.updatePhotoURL(downloadUrl);
-
-      // Also update in Firestore for persistence
-      await _firestore.collection('users').doc(userId).set({
-        'photoURL': downloadUrl,
-        'email': userEmail,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      return downloadUrl;
-    } catch (e) {
-      print('Error uploading image: $e');
-      throw Exception('Failed to upload image: $e');
-    }
-  }
-
-  // Pick image from gallery
-  Future<XFile?> pickImageFromGallery() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      return image;
-    } catch (e) {
-      print('Error picking image from gallery: $e');
-      return null;
-    }
-  }
-
-  // Pick image from camera
-  Future<XFile?> pickImageFromCamera() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.camera);
-      return image;
-    } catch (e) {
-      print('Error picking image from camera: $e');
-      return null;
-    }
+    await _supabase.from('users').update(data).eq('id', uid);
   }
 }

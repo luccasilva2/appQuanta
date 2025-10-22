@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MyAppsScreen extends StatefulWidget {
   const MyAppsScreen({super.key});
@@ -11,8 +10,17 @@ class MyAppsScreen extends StatefulWidget {
 }
 
 class _MyAppsScreenState extends State<MyAppsScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  Future<PostgrestList> _fetchApps() async {
+    final user = _supabase.auth.currentUser;
+    final response = await _supabase
+        .from('apps')
+        .select()
+        .eq('user_id', user?.id ?? '')
+        .order('created_at', ascending: false);
+    return response;
+  }
 
   // Example apps data
   final List<Map<String, dynamic>> exampleApps = [
@@ -44,8 +52,6 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = _auth.currentUser;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Apps'),
@@ -66,12 +72,8 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('apps')
-                  .where('userId', isEqualTo: user?.uid)
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+            child: FutureBuilder<PostgrestList>(
+              future: _fetchApps(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -86,7 +88,7 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final apps = snapshot.data?.docs ?? [];
+                final apps = snapshot.data as List<dynamic>? ?? [];
 
                 if (apps.isEmpty) {
                   return GridView.builder(
@@ -118,7 +120,7 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
                   ),
                   itemCount: apps.length,
                   itemBuilder: (context, index) {
-                    final app = apps[index];
+                    final app = apps[index] as Map<String, dynamic>;
                     return _AppCard(app: app);
                   },
                 );
@@ -137,59 +139,11 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Builder(
-        builder: (BuildContext innerContext) {
-          final theme = Theme.of(innerContext);
-          final colorScheme = theme.colorScheme;
-          final textTheme = theme.textTheme;
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                PhosphorIcons.puzzlePiece(),
-                size: 64,
-                color: colorScheme.onSurface.withOpacity(0.5),
-              ),
-              const SizedBox(height: 16),
-              Text('Nenhum app criado ainda', style: textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                'Comece criando seu primeiro app!',
-                style: textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/create');
-                },
-                icon: Icon(PhosphorIcons.plus()),
-                label: const Text('Criar Primeiro App'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 }
 
 class _AppCard extends StatelessWidget {
-  final DocumentSnapshot? app;
+  final Map<String, dynamic>? app;
   final bool isExample;
   final Map<String, dynamic>? exampleData;
 
@@ -201,14 +155,14 @@ class _AppCard extends StatelessWidget {
     if (isExample && exampleData != null) {
       appData = exampleData!;
     } else if (app != null) {
-      appData = app!.data() as Map<String, dynamic>;
+      appData = app!;
     } else {
       return const SizedBox.shrink();
     }
 
     final createdAt = isExample
         ? appData['createdAt'] as DateTime?
-        : (appData['createdAt'] as Timestamp?)?.toDate();
+        : DateTime.tryParse(appData['created_at'] as String? ?? '');
     final formattedDate = createdAt != null
         ? '${createdAt.day}/${createdAt.month}/${createdAt.year}'
         : 'Data desconhecida';

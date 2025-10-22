@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../supabase_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,8 +16,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseService _supabaseService = SupabaseService();
 
   @override
   void initState() {
@@ -46,20 +45,20 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _addExampleAppIfEmpty() async {
-    final user = _auth.currentUser;
+    final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final querySnapshot = await _firestore
-        .collection('apps')
-        .where('userId', isEqualTo: user.uid)
-        .limit(1)
-        .get();
+    final response = await Supabase.instance.client
+        .from('apps')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
 
-    if (querySnapshot.docs.isEmpty) {
-      await _firestore.collection('apps').add({
+    if (response.isEmpty) {
+      await Supabase.instance.client.from('apps').insert({
         'name': 'Meu Primeiro App',
-        'userId': user.uid,
-        'createdAt': Timestamp.now(),
+        'user_id': user.id,
+        'created_at': DateTime.now().toIso8601String(),
         'screens': ['Tela Inicial', 'Configurações'],
         'status': 'Em desenvolvimento',
       });
@@ -75,8 +74,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = _auth.currentUser;
-    final userName = user?.displayName ?? 'Usuário';
+    final user = Supabase.instance.client.auth.currentUser;
+    final userName = user?.userMetadata?['display_name'] ?? 'Usuário';
 
     return Scaffold(
       body: Container(
@@ -138,15 +137,15 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(height: 16),
 
-                    // Apps list from Firestore
+                    // Apps list from Supabase
                     Expanded(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: _firestore
-                            .collection('apps')
-                            .where('userId', isEqualTo: user?.uid)
-                            .orderBy('createdAt', descending: true)
-                            .limit(3)
-                            .snapshots(),
+                      child: StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: Supabase.instance.client
+                            .from('apps')
+                            .stream(primaryKey: ['id'])
+                            .eq('user_id', user!.id)
+                            .order('created_at', ascending: false)
+                            .limit(3),
                         builder: (context, snapshot) {
                           if (snapshot.hasError) {
                             return Center(
@@ -164,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen>
                             );
                           }
 
-                          final apps = snapshot.data?.docs ?? [];
+                          final apps = snapshot.data ?? [];
 
                           if (apps.isEmpty) {
                             return _buildEmptyState();
@@ -173,8 +172,7 @@ class _HomeScreenState extends State<HomeScreen>
                           return ListView.builder(
                             itemCount: apps.length,
                             itemBuilder: (context, index) {
-                              final app =
-                                  apps[index].data() as Map<String, dynamic>;
+                              final app = apps[index];
                               return _AppCard(app: app);
                             },
                           );
@@ -264,9 +262,9 @@ class _AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final createdAt = app['createdAt'] as Timestamp?;
+    final createdAt = app['created_at'] as String?;
     final formattedDate = createdAt != null
-        ? '${createdAt.toDate().day}/${createdAt.toDate().month}/${createdAt.toDate().year}'
+        ? DateTime.parse(createdAt).toLocal().toString().split(' ')[0].split('-').reversed.join('/')
         : 'Data desconhecida';
 
     // Determine app type based on screens or default

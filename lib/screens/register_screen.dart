@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../auth_service.dart';
+import '../supabase_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,7 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final SupabaseService _supabaseService = SupabaseService();
   bool _isLoading = false;
 
   @override
@@ -83,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
-      await _authService.registerWithEmailAndPassword(
+      await _supabaseService.registerWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),

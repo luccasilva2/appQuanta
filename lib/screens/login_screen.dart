@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../auth_service.dart';
+import '../supabase_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final SupabaseService _supabaseService = SupabaseService();
   bool _isLoading = false;
 
   @override
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      await _authService.signInWithEmailAndPassword(
+      await _supabaseService.signInWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
       );

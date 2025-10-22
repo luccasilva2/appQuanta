@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
 import 'dart:ui';
-import '../auth_service.dart';
-import 'package:image_picker_web/image_picker_web.dart'; // Import for web image picker
+import '../supabase_service.dart';
 
 class ParticlePainter extends CustomPainter {
   final double animationValue;
@@ -48,7 +45,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  final AuthService _authService = AuthService();
+  final SupabaseService _supabaseService = SupabaseService();
   bool _isDarkMode = false;
   bool _isAboutExpanded = false;
   late AnimationController _particleController;
@@ -74,45 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
 
-  Future<void> _pickAndUploadImage(
-      ImageSource source, User user, BuildContext context) async {
-    try {
-      XFile? image;
-      if (kIsWeb) {
-        final mediaInfo = await ImagePickerWeb.getImageInfo;
-        if (mediaInfo != null && mediaInfo.data != null) {
-          image = XFile.fromData(mediaInfo.data!,
-              name: mediaInfo.fileName ?? 'profile_image.png');
-        }
-      } else {
-        image = await ImagePicker().pickImage(source: source);
-      }
 
-      if (image != null) {
-        await _authService.uploadProfileImage(
-          user.uid,
-          user.email!,
-          image,
-        );
-        if (mounted) {
-          setState(() {});
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Foto de perfil atualizada!'),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao atualizar foto: $e'),
-          ),
-        );
-      }
-    }
-  }
 
   Future<void> _confirmLogout() async {
     final bool? confirm = await showDialog<bool>(
@@ -140,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     if (confirm == true) {
-      await _authService.signOut();
+      await _supabaseService.signOut();
       if (mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
@@ -183,10 +142,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // === USER INFO ===
-                    StreamBuilder<User?>(
-                      stream: _authService.authStateChanges,
+                    StreamBuilder<AuthState>(
+                      stream: _supabaseService.authStateChanges,
                       builder: (context, snapshot) {
-                        final user = snapshot.data;
+                        final user = snapshot.data?.session?.user;
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
@@ -197,51 +156,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  if (user == null) return;
-                                  showModalBottomSheet(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return SafeArea(
-                                        child: Wrap(
-                                          children: <Widget>[
-                                            ListTile(
-                                              leading:
-                                                  Icon(PhosphorIcons.image()),
-                                              title: const Text('Galeria'),
-                                              onTap: () {
-                                                Navigator.of(context).pop();
-                                                _pickAndUploadImage(
-                                                    ImageSource.gallery,
-                                                    user,
-                                                    context);
-                                              },
-                                            ),
-                                            if (!kIsWeb)
-                                              ListTile(
-                                                leading: Icon(
-                                                    PhosphorIcons.camera()),
-                                                title: const Text('Câmera'),
-                                                onTap: () {
-                                                  Navigator.of(context).pop();
-                                                  _pickAndUploadImage(
-                                                      ImageSource.camera,
-                                                      user,
-                                                      context);
-                                                },
-                                              ),
-                                            if (kIsWeb)
-                                              ListTile(
-                                                leading: Icon(
-                                                    PhosphorIcons.warning()),
-                                                title: const Text('Câmera'),
-                                                subtitle: const Text(
-                                                    'Não suportado na web'),
-                                                enabled: false,
-                                              ),
-                                          ],
-                                        ),
-                                      );
-                                    },
+                                  // Profile image upload disabled
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Upload de imagem desabilitado'),
+                                    ),
                                   );
                                 },
                                 child: Container(
@@ -271,10 +190,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                     ],
                                   ),
-                                  child: user?.photoURL != null
+                                  child: user?.userMetadata?['avatar_url'] != null
                                       ? ClipOval(
                                           child: Image.network(
-                                            user!.photoURL!,
+                                            user!.userMetadata!['avatar_url'],
                                             width: 120,
                                             height: 120,
                                             fit: BoxFit.cover,
@@ -301,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                user?.displayName ?? 'Usuário AppQuanta',
+                                user?.userMetadata?['display_name'] ?? 'Usuário AppQuanta',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineMedium,

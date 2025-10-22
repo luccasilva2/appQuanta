@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'screens/home_screen.dart';
@@ -16,8 +15,11 @@ import 'providers/app_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+
+  await Supabase.initialize(
+    url: 'https://keyazyprdifuryjxdqrc.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtleWF6eXByZGlmdXJ5anhkcXJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNzM1ODUsImV4cCI6MjA3NjY0OTU4NX0.kDP3tb3M2CwqM184PnMTounMYzW8hPpj6v0NjGO7uy0',
+  );
 }
 
 class MyApp extends StatefulWidget {
