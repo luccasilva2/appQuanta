@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/email_confirmation_screen.dart';
 import 'screens/create_app_screen.dart';
 import 'screens/my_apps_screen.dart';
 import 'screens/settings_screen.dart';
@@ -54,6 +55,10 @@ class MyApp extends StatelessWidget {
           case '/settings':
             return MaterialPageRoute(
               builder: (context) => const SettingsScreen(),
+            );
+          case '/email-confirmation':
+            return MaterialPageRoute(
+              builder: (context) => const EmailConfirmationScreen(),
             );
           default:
             return null;

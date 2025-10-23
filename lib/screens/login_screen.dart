@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../supabase_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -64,7 +65,22 @@ class _LoginScreenState extends State<LoginScreen>
         _emailController.text.trim(),
         _passwordController.text,
       );
-      Navigator.pushReplacementNamed(context, '/main');
+
+      // Verificar se o email foi confirmado
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final response = await Supabase.instance.client
+            .from('users')
+            .select('confirmed')
+            .eq('id', user.id)
+            .single();
+
+        if (response['confirmed'] == true) {
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          Navigator.pushReplacementNamed(context, '/email-confirmation');
+        }
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,

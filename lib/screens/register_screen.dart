@@ -1,6 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class SupabaseService {
+  final SupabaseClient _client = Supabase.instance.client;
+
+  /// Registro de novo usuário com criação manual no banco
+  Future<void> registerWithEmailAndPassword(
+    String email,
+    String password,
+    String displayName,
+  ) async {
+    // Cria o usuário no auth
+    final response = await _client.auth.signUp(
+      email: email,
+      password: password,
+    );
+
+    if (response.user == null) {
+      throw Exception('Falha ao registrar usuário');
+    }
+
+    final userId = response.user!.id;
+
+    // Verifica se o usuário já existe na tabela 'users'
+    final userQueryResponse = await _client
+        .from('users')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (userQueryResponse == null) {
+      // Cria o registro na tabela 'users' manualmente apenas se não existir
+      await _client.from('users').insert({
+        'id': userId,
+        'email': email,
+        'display_name': displayName,
+        'created_at': DateTime.now().toIso8601String(),
+        'photo_url': null,
+      });
+    }
+  }
+
+  /// Login normal
+  Future<void> signIn(String email, String password) async {
+    final response = await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+
+    if (response.user == null) {
+      throw Exception('Falha ao fazer login');
+    }
+  }
+
+  /// Logout
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+  }
+}
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -88,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         _passwordController.text,
         _nameController.text.trim(),
       );
-      Navigator.pushReplacementNamed(context, '/main');
+      Navigator.pushReplacementNamed(context, '/email-confirmation');
     } catch (e) {
       ScaffoldMessenger.of(
         context,

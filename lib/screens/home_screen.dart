@@ -139,45 +139,49 @@ class _HomeScreenState extends State<HomeScreen>
 
                     // Apps list from Supabase
                     Expanded(
-                      child: StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: Supabase.instance.client
-                            .from('apps')
-                            .stream(primaryKey: ['id'])
-                            .eq('user_id', user!.id)
-                            .order('created_at', ascending: false)
-                            .limit(3),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Text(
-                                'Erro ao carregar apps',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            );
-                          }
+                      child: user == null
+                          ? const Center(child: Text('Usuário não autenticado'))
+                          : StreamBuilder<List<Map<String, dynamic>>>(
+                              stream: Supabase.instance.client
+                                  .from('apps')
+                                  .stream(primaryKey: ['id'])
+                                  .eq('user_id', user.id)
+                                  .order('created_at', ascending: false)
+                                  .limit(3),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return Center(
+                                    child: Text(
+                                      'Erro ao carregar apps',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  );
+                                }
 
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
 
-                          final apps = snapshot.data ?? [];
+                                final apps = snapshot.data ?? [];
 
-                          if (apps.isEmpty) {
-                            return _buildEmptyState();
-                          }
+                                if (apps.isEmpty) {
+                                  return _buildEmptyState();
+                                }
 
-                          return ListView.builder(
-                            itemCount: apps.length,
-                            itemBuilder: (context, index) {
-                              final app = apps[index];
-                              return _AppCard(app: app);
-                            },
-                          );
-                        },
-                      ),
+                                return ListView.builder(
+                                  itemCount: apps.length,
+                                  itemBuilder: (context, index) {
+                                    final app = apps[index];
+                                    return _AppCard(app: app);
+                                  },
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
@@ -237,10 +241,7 @@ class _HomeScreenState extends State<HomeScreen>
                 color: colorScheme.onSurface.withOpacity(0.5),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Nenhum app criado ainda',
-                style: textTheme.headlineSmall,
-              ),
+              Text('Nenhum app criado ainda', style: textTheme.headlineSmall),
               const SizedBox(height: 8),
               Text(
                 'Comece criando seu primeiro app!',
@@ -264,7 +265,9 @@ class _AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final createdAt = app['created_at'] as String?;
     final formattedDate = createdAt != null
-        ? DateTime.parse(createdAt).toLocal().toString().split(' ')[0].split('-').reversed.join('/')
+        ? DateTime.parse(
+            createdAt,
+          ).toLocal().toString().split(' ')[0].split('-').reversed.join('/')
         : 'Data desconhecida';
 
     // Determine app type based on screens or default
