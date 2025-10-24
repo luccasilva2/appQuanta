@@ -61,30 +61,28 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      await _supabaseService.signInWithEmailAndPassword(
+      final response = await _supabaseService.signInWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       // Verificar se o email foi confirmado
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final response = await Supabase.instance.client
-            .from('users')
-            .select('confirmed')
-            .eq('id', user.id)
-            .single();
-
-        if (response['confirmed'] == true) {
-          Navigator.pushReplacementNamed(context, '/main');
-        } else {
-          Navigator.pushReplacementNamed(context, '/email-confirmation');
-        }
+      if (response.user != null && response.user!.emailConfirmedAt != null) {
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        // Email não confirmado, redirecionar para tela de confirmação
+        Navigator.pushReplacementNamed(context, '/email-confirmation');
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
+      // Verificar se o erro é de email não confirmado
+      if (e.toString().contains('email_not_confirmed')) {
+        // Redirecionar para tela de confirmação em vez de mostrar erro
+        Navigator.pushReplacementNamed(context, '/email-confirmation');
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
+      }
     } finally {
       setState(() {
         _isLoading = false;
