@@ -61,28 +61,15 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      final response = await _supabaseService.signInWithEmailAndPassword(
+      await _supabaseService.signInWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
       );
-
-      // Verificar se o email foi confirmado
-      if (response.user != null && response.user!.emailConfirmedAt != null) {
-        Navigator.pushReplacementNamed(context, '/main');
-      } else {
-        // Email não confirmado, redirecionar para tela de confirmação
-        Navigator.pushReplacementNamed(context, '/email-confirmation');
-      }
+      Navigator.pushReplacementNamed(context, '/main');
     } catch (e) {
-      // Verificar se o erro é de email não confirmado
-      if (e.toString().contains('email_not_confirmed')) {
-        // Redirecionar para tela de confirmação em vez de mostrar erro
-        Navigator.pushReplacementNamed(context, '/email-confirmation');
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
     } finally {
       setState(() {
         _isLoading = false;
