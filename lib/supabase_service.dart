@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
@@ -7,6 +9,9 @@ class SupabaseService {
   SupabaseService._internal();
 
   final SupabaseClient _client = Supabase.instance.client;
+
+  // Base URL do servidor Python
+  final String _baseUrl = 'https://appquanta-server.onrender.com';
 
   // Get current user
   User? get currentUser => _client.auth.currentUser;
@@ -110,22 +115,42 @@ class SupabaseService {
     }
   }
 
-  // Get user's apps
+  // Get user's apps - usando servidor Python
   Future<List<Map<String, dynamic>>> getUserApps(String userId) async {
     try {
-      final response = await _client
-          .from('apps')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+      // Refresh session to ensure token is valid
+      try {
+        await _client.auth.refreshSession();
+      } catch (e) {
+        print('Failed to refresh session: $e');
+      }
 
-      return List<Map<String, dynamic>>.from(response);
+      final token = _client.auth.currentSession?.accessToken;
+      if (token == null) throw Exception('User not authenticated');
+
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/v1/apps'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+
+      return [];
     } catch (e) {
+      print('Failed to get user apps: $e');
       return [];
     }
   }
 
-  // Create new app
+  // Create new app - usando servidor Python
   Future<Map<String, dynamic>> createApp({
     required String userId,
     required String name,
@@ -135,31 +160,43 @@ class SupabaseService {
     required List<String> screens,
   }) async {
     try {
-      final appData = {
-        'user_id': userId,
-        'name': name,
-        'description': description,
-        'icon': icon,
-        'color': color,
-        'screens': screens,
-        'status': 'Em construção',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      // Refresh session to ensure token is valid
+      try {
+        await _client.auth.refreshSession();
+      } catch (e) {
+        print('Failed to refresh session: $e');
+      }
 
-      final response = await _client
-          .from('apps')
-          .insert(appData)
-          .select()
-          .single();
+      final token = _client.auth.currentSession?.accessToken;
+      if (token == null) throw Exception('User not authenticated');
 
-      return response;
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/v1/apps/create'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'status': 'active', // Ajustado para o modelo do servidor
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          return data['data'];
+        }
+      }
+
+      throw Exception('Failed to create app: ${response.body}');
     } catch (e) {
       throw Exception('Failed to create app: $e');
     }
   }
 
-  // Upload APK to storage
+  // Upload APK to storage - usando servidor Python
   Future<String?> uploadApk(
     String userId,
     String appId,
@@ -167,52 +204,55 @@ class SupabaseService {
     List<int> fileBytes,
   ) async {
     try {
-      final filePath = 'apks/$userId/$appId/$fileName';
+      final token = _client.auth.currentSession?.accessToken;
+      if (token == null) throw Exception('User not authenticated');
 
-      await _client.storage
-          .from('apks')
-          .uploadBinary(
-            filePath,
-            Uint8List.fromList(fileBytes),
-            fileOptions: const FileOptions(upsert: true),
-          );
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/api/v1/apps/$appId/upload-apk'),
+      );
 
-      final publicUrl = _client.storage.from('apks').getPublicUrl(filePath);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+      );
 
-      // Update app with APK URL
-      await _client
-          .from('apps')
-          .update({
-            'apk_url': publicUrl,
-            'status': 'Pronto para download',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', appId);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-      return publicUrl;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          return data['data']['apk_url'];
+        }
+      }
+
+      throw Exception('Failed to upload APK: ${response.body}');
     } catch (e) {
       throw Exception('Failed to upload APK: $e');
     }
   }
 
-  // Delete app
+  // Delete app - usando servidor Python
   Future<void> deleteApp(String appId) async {
     try {
-      // Delete APK from storage first
-      final app = await _client
-          .from('apps')
-          .select('apk_url')
-          .eq('id', appId)
-          .single();
-      if (app['apk_url'] != null) {
-        // Extract file path from URL and delete
-        final url = app['apk_url'] as String;
-        final filePath = url.split('/').last;
-        await _client.storage.from('apks').remove([filePath]);
-      }
+      final token = _client.auth.currentSession?.accessToken;
+      if (token == null) throw Exception('User not authenticated');
 
-      // Delete app from database
-      await _client.from('apps').delete().eq('id', appId);
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/v1/apps/$appId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        final data = jsonDecode(response.body);
+        if (!data['success']) {
+          throw Exception('Failed to delete app: ${data['message']}');
+        }
+      }
     } catch (e) {
       throw Exception('Failed to delete app: $e');
     }

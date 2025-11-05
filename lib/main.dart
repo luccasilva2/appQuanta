@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'screens/create_app_screen.dart';
 import 'screens/my_apps_screen.dart';
 import 'screens/settings_screen.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +29,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'AppQuanta',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: Colors.white,
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const SupabaseInitializer(),
       onGenerateRoute: (settings) {
         switch (settings.name) {
@@ -42,7 +42,9 @@ class MyApp extends StatelessWidget {
               builder: (context) => const RegisterScreen(),
             );
           case '/main':
-            return MaterialPageRoute(builder: (context) => const HomeScreen());
+            return MaterialPageRoute(
+              builder: (context) => const MainNavigationScreen(),
+            );
           case '/create':
             return MaterialPageRoute(
               builder: (context) => const CreateAppScreen(),

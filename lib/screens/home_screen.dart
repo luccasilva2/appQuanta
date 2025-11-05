@@ -48,20 +48,17 @@ class _HomeScreenState extends State<HomeScreen>
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final response = await Supabase.instance.client
-        .from('apps')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
+    final apps = await _supabaseService.getUserApps(user.id);
 
-    if (response.isEmpty) {
-      await Supabase.instance.client.from('apps').insert({
-        'name': 'Meu Primeiro App',
-        'user_id': user.id,
-        'created_at': DateTime.now().toIso8601String(),
-        'screens': ['Tela Inicial', 'Configurações'],
-        'status': 'Em desenvolvimento',
-      });
+    if (apps.isEmpty) {
+      await _supabaseService.createApp(
+        userId: user.id,
+        name: 'Meu Primeiro App',
+        description: 'App de exemplo criado automaticamente',
+        icon: 'default',
+        color: '#4E9FFF',
+        screens: ['Tela Inicial', 'Configurações'],
+      );
     }
   }
 
@@ -137,22 +134,17 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(height: 16),
 
-                    // Apps list from Supabase
+                    // Apps list from server
                     Expanded(
                       child: user == null
                           ? const Center(child: Text('Usuário não autenticado'))
-                          : StreamBuilder<List<Map<String, dynamic>>>(
-                              stream: Supabase.instance.client
-                                  .from('apps')
-                                  .stream(primaryKey: ['id'])
-                                  .eq('user_id', user.id)
-                                  .order('created_at', ascending: false)
-                                  .limit(3),
+                          : FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _supabaseService.getUserApps(user.id),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
                                   return Center(
                                     child: Text(
-                                      'Erro ao carregar apps',
+                                      'Erro ao carregar apps: ${snapshot.error}',
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodyMedium,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:ui';
 import 'package:lottie/lottie.dart';
+import '../supabase_service.dart';
 
 class CreateAppScreen extends StatefulWidget {
   const CreateAppScreen({super.key});
@@ -24,7 +24,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   Color _selectedColor = const Color(0xFF4E9FFF);
   final List<String> _selectedScreens = ['Home', 'About'];
 
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseService _supabaseService = SupabaseService();
 
   bool _isGenerating = false;
 
@@ -92,23 +92,21 @@ class _CreateAppScreenState extends State<CreateAppScreen>
     });
 
     try {
-      final user = _supabase.auth.currentUser;
+      final user = _supabaseService.currentUser;
       if (user == null) return;
 
       // Simulate generation delay
       await Future.delayed(const Duration(seconds: 2));
 
-      // Save to Supabase
-      await _supabase.from('apps').insert({
-        'name': _appNameController.text.trim(),
-        'description': _appDescriptionController.text.trim(),
-        'icon': _selectedIcon,
-        'color': _selectedColor.value,
-        'screens': _selectedScreens,
-        'user_id': user.id,
-        'status': 'Em construção',
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // Create app via server
+      await _supabaseService.createApp(
+        userId: user.id,
+        name: _appNameController.text.trim(),
+        description: _appDescriptionController.text.trim(),
+        icon: _selectedIcon,
+        color: '#${_selectedColor.value.toRadixString(16).substring(2)}',
+        screens: _selectedScreens,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -118,9 +116,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao criar app: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar app: $e')));
       }
     } finally {
       if (mounted) {
@@ -136,88 +132,75 @@ class _CreateAppScreenState extends State<CreateAppScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Criar App'),
-        leading: IconButton(
-          icon: Icon(PhosphorIcons.arrowLeft()),
-          onPressed: () => Navigator.pop(context),
-        ),
+        elevation: 0,
       ),
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _slideAnimation.value),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      Text(
-                        'Crie seu novo aplicativo',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // App Name
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.8),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withOpacity(0.2),
-                            width: 1,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color(0xFFF5F5F5), Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _slideAnimation.value),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title
+                        Text(
+                          'Crie seu novo aplicativo',
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: TextField(
-                            controller: _appNameController,
-                            decoration: InputDecoration(
-                              labelText: 'Nome do App',
-                              hintText: 'Ex: Meu App Incrível',
-                              prefixIcon: Icon(PhosphorIcons.textAa()),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(16),
-                            ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Transforme sua ideia em realidade',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                      // App Name
+                      TextField(
+                        controller: _appNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Nome do App',
+                          hintText: 'Ex: Meu App Incrível',
+                          prefixIcon: Icon(PhosphorIcons.textAa()),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
 
                       // App Description
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.8),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: TextField(
-                            controller: _appDescriptionController,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              labelText: 'Descrição (opcional)',
-                              hintText:
-                                  'Descreva brevemente o propósito do seu app',
-                              prefixIcon: Icon(PhosphorIcons.article()),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(16),
-                            ),
+                      TextField(
+                        controller: _appDescriptionController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Descrição (opcional)',
+                          hintText: 'Descreva brevemente o propósito do seu app',
+                          prefixIcon: Icon(PhosphorIcons.article()),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
@@ -419,12 +402,9 @@ class _CreateAppScreenState extends State<CreateAppScreen>
 
                       // Recent Projects Section
                       FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _supabase
-                            .from('apps')
-                            .select()
-                            .eq('user_id', _supabase.auth.currentUser?.id ?? '')
-                            .order('created_at', ascending: false)
-                            .limit(3),
+                        future: _supabaseService.getUserApps(
+                          Supabase.instance.client.auth.currentUser?.id ?? '',
+                        ),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
                             return const SizedBox.shrink();
@@ -500,7 +480,15 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                                         height: 32,
                                                         decoration: BoxDecoration(
                                                           color: Color(
-                                                            app['color'] ??
+                                                            int.tryParse(
+                                                                  app['color']
+                                                                          ?.replaceFirst(
+                                                                            '#',
+                                                                            '',
+                                                                          ) ??
+                                                                      'FF4E9FFF',
+                                                                  radix: 16,
+                                                                ) ??
                                                                 0xFF4E9FFF,
                                                           ).withOpacity(0.1),
                                                           borderRadius:
@@ -518,7 +506,15 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                                           )['icon'],
                                                           size: 16,
                                                           color: Color(
-                                                            app['color'] ??
+                                                            int.tryParse(
+                                                                  app['color']
+                                                                          ?.replaceFirst(
+                                                                            '#',
+                                                                            '',
+                                                                          ) ??
+                                                                      'FF4E9FFF',
+                                                                  radix: 16,
+                                                                ) ??
                                                                 0xFF4E9FFF,
                                                           ),
                                                         ),
@@ -554,26 +550,27 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                                             context,
                                                           ).colorScheme.primary,
                                                         ),
-                                                  ),
-                                                ],
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
