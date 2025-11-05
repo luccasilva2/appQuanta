@@ -25,18 +25,9 @@ class SupabaseService {
         email: email,
         password: password,
         data: {'display_name': name},
+        emailRedirectTo: null,
+        captchaToken: null,
       );
-
-      if (response.user != null) {
-        // Save user data to database
-        await _client.from('users').insert({
-          'id': response.user!.id,
-          'email': email,
-          'display_name': name,
-          'created_at': DateTime.now().toIso8601String(),
-          'photo_url': null,
-        });
-      }
 
       return response;
     } catch (e) {
@@ -100,11 +91,13 @@ class SupabaseService {
     try {
       final filePath = 'profile_images/$userId/$fileName';
 
-      await _client.storage.from('avatars').uploadBinary(
-        filePath,
-        Uint8List.fromList(fileBytes),
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _client.storage
+          .from('avatars')
+          .uploadBinary(
+            filePath,
+            Uint8List.fromList(fileBytes),
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       final publicUrl = _client.storage.from('avatars').getPublicUrl(filePath);
 
@@ -176,20 +169,25 @@ class SupabaseService {
     try {
       final filePath = 'apks/$userId/$appId/$fileName';
 
-      await _client.storage.from('apks').uploadBinary(
-        filePath,
-        Uint8List.fromList(fileBytes),
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _client.storage
+          .from('apks')
+          .uploadBinary(
+            filePath,
+            Uint8List.fromList(fileBytes),
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       final publicUrl = _client.storage.from('apks').getPublicUrl(filePath);
 
       // Update app with APK URL
-      await _client.from('apps').update({
-        'apk_url': publicUrl,
-        'status': 'Pronto para download',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', appId);
+      await _client
+          .from('apps')
+          .update({
+            'apk_url': publicUrl,
+            'status': 'Pronto para download',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', appId);
 
       return publicUrl;
     } catch (e) {
@@ -201,7 +199,11 @@ class SupabaseService {
   Future<void> deleteApp(String appId) async {
     try {
       // Delete APK from storage first
-      final app = await _client.from('apps').select('apk_url').eq('id', appId).single();
+      final app = await _client
+          .from('apps')
+          .select('apk_url')
+          .eq('id', appId)
+          .single();
       if (app['apk_url'] != null) {
         // Extract file path from URL and delete
         final url = app['apk_url'] as String;

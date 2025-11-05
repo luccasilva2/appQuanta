@@ -1,45 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-class SupabaseService {
-  final SupabaseClient _client = Supabase.instance.client;
-
-  /// Registro de novo usuário - o trigger do banco cuida da inserção na tabela users
-  Future<void> registerWithEmailAndPassword(
-    String email,
-    String password,
-    String displayName,
-  ) async {
-    // Cria o usuário no auth com os metadados
-    final response = await _client.auth.signUp(
-      email: email,
-      password: password,
-      data: {'display_name': displayName},
-    );
-
-    if (response.user == null) {
-      throw Exception('Falha ao registrar usuário');
-    }
-  }
-
-  /// Login normal
-  Future<void> signIn(String email, String password) async {
-    final response = await _client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-
-    if (response.user == null) {
-      throw Exception('Falha ao fazer login');
-    }
-  }
-
-  /// Logout
-  Future<void> signOut() async {
-    await _client.auth.signOut();
-  }
-}
+import 'package:appquanta/supabase_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
