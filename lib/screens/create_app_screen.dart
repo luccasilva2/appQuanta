@@ -5,7 +5,7 @@ import 'package:lottie/lottie.dart';
 import '../supabase_service.dart';
 
 class CreateAppScreen extends StatefulWidget {
-  const CreateAppScreen({super.key});
+  const CreateAppScreen({super.key}                                    );
 
   @override
   State<CreateAppScreen> createState() => _CreateAppScreenState();
@@ -104,7 +104,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
         name: _appNameController.text.trim(),
         description: _appDescriptionController.text.trim(),
         icon: _selectedIcon,
-        color: '#${_selectedColor.value.toRadixString(16).substring(2)}',
+        color: '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
         screens: _selectedScreens,
       );
 
@@ -134,42 +134,34 @@ class _CreateAppScreenState extends State<CreateAppScreen>
         title: const Text('Criar App'),
         elevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [const Color(0xFFF5F5F5), Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: AnimatedBuilder(
-              animation: _slideAnimation,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, _slideAnimation.value),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title
-                        Text(
-                          'Crie seu novo aplicativo',
-                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: AnimatedBuilder(
+            animation: _slideAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, _slideAnimation.value),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
+                        'Crie seu novo aplicativo',
+                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Transforme sua ideia em realidade',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Transforme sua ideia em realidade',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
-                        const SizedBox(height: 32),
+                      ),
+                      const SizedBox(height: 32),
 
                       // App Name
                       TextField(
@@ -178,12 +170,6 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                           labelText: 'Nome do App',
                           hintText: 'Ex: Meu App Incrível',
                           prefixIcon: Icon(PhosphorIcons.textAa()),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -196,12 +182,6 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                           labelText: 'Descrição (opcional)',
                           hintText: 'Descreva brevemente o propósito do seu app',
                           prefixIcon: Icon(PhosphorIcons.article()),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -228,17 +208,13 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                               height: 80,
                               decoration: BoxDecoration(
                                 color: _selectedIcon == iconData['name']
-                                    ? Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.1)
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                                     : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _selectedIcon == iconData['name']
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.outline.withOpacity(0.3),
+                                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                                   width: 2,
                                 ),
                               ),
@@ -329,72 +305,34 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                       const SizedBox(height: 48),
 
                       // Generate Button
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                      SizedBox(
                         width: double.infinity,
                         height: 60,
-                        child: InkWell(
-                          onTap: _isGenerating ? null : _generateApp,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: _isGenerating
-                                  ? null
-                                  : const LinearGradient(
-                                      colors: [
-                                        Color(0xFF4E9FFF),
-                                        Color(0xFF00D4FF),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                              color: _isGenerating
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.7)
-                                  : null,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: _isGenerating
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFF4E9FFF,
-                                        ).withOpacity(0.3),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
+                        child: ElevatedButton(
+                          onPressed: _isGenerating ? null : _generateApp,
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _isGenerating
-                                    ? SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Lottie.asset(
-                                          'assets/animations/loading.json',
-                                          fit: BoxFit.contain,
-                                        ),
-                                      )
-                                    : Icon(
-                                        PhosphorIcons.sparkle(),
-                                        color: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _isGenerating
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Lottie.asset(
+                                        'assets/animations/loading.json',
+                                        fit: BoxFit.contain,
                                       ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _isGenerating
-                                      ? 'Criando estrutura...'
-                                      : 'Gerar Estrutura',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                                    )
+                                  : Icon(PhosphorIcons.sparkle()),
+                              const SizedBox(width: 12),
+                              Text(
+                                _isGenerating ? 'Criando estrutura...' : 'Gerar Estrutura',
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -429,20 +367,19 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                       animation: _animationController,
                                       builder: (context, child) {
                                         final delay = index * 0.1;
-                                        final animation =
-                                            Tween<double>(
-                                              begin: 0.0,
-                                              end: 1.0,
-                                            ).animate(
-                                              CurvedAnimation(
-                                                parent: _animationController,
-                                                curve: Interval(
-                                                  delay,
-                                                  delay + 0.3,
-                                                  curve: Curves.easeOut,
-                                                ),
-                                              ),
-                                            );
+                                        final animation = Tween<double>(
+                                          begin: 0.0,
+                                          end: 1.0,
+                                        ).animate(
+                                          CurvedAnimation(
+                                            parent: _animationController,
+                                            curve: Interval(
+                                              delay,
+                                              delay + 0.3,
+                                              curve: Curves.easeOut,
+                                            ),
+                                          ),
+                                        );
                                         return Transform.translate(
                                           offset: Offset(
                                             50 * (1 - animation.value),
@@ -450,127 +387,83 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                           ),
                                           child: Opacity(
                                             opacity: animation.value,
-                                            child: Container(
-                                              width: 200,
-                                              margin: const EdgeInsets.only(
-                                                right: 16,
-                                              ),
-                                              padding: const EdgeInsets.all(16),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.surface,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .outline
-                                                      .withOpacity(0.3),
-                                                ),
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Container(
-                                                        width: 32,
-                                                        height: 32,
-                                                        decoration: BoxDecoration(
-                                                          color: Color(
-                                                            int.tryParse(
-                                                                  app['color']
-                                                                          ?.replaceFirst(
-                                                                            '#',
-                                                                            '',
-                                                                          ) ??
-                                                                      'FF4E9FFF',
-                                                                  radix: 16,
-                                                                ) ??
-                                                                0xFF4E9FFF,
-                                                          ).withOpacity(0.1),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                        ),
-                                                        child: Icon(
-                                                          _icons.firstWhere(
-                                                            (icon) =>
-                                                                icon['name'] ==
-                                                                app['icon'],
-                                                            orElse: () =>
-                                                                _icons.first,
-                                                          )['icon'],
-                                                          size: 16,
-                                                          color: Color(
-                                                            int.tryParse(
-                                                                  app['color']
-                                                                          ?.replaceFirst(
-                                                                            '#',
-                                                                            '',
-                                                                          ) ??
-                                                                      'FF4E9FFF',
-                                                                  radix: 16,
-                                                                ) ??
-                                                                0xFF4E9FFF,
+                                            child: Card(
+                                              child: Container(
+                                                width: 200,
+                                                padding: const EdgeInsets.all(16),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          width: 32,
+                                                          height: 32,
+                                                          decoration: BoxDecoration(
+                                                            color: Color(
+                                                              int.tryParse(
+                                                                    app['color']?.replaceFirst('#', '') ?? 'FF4E9FFF',
+                                                                    radix: 16,
+                                                                  ) ??
+                                                                  0xFF4E9FFF,
+                                                            ).withOpacity(0.1),
+                                                            borderRadius: BorderRadius.circular(8),
+                                                          ),
+                                                          child: Icon(
+                                                            _icons.firstWhere(
+                                                              (icon) => icon['name'] == app['icon'],
+                                                              orElse: () => _icons.first,
+                                                            )['icon'],
+                                                            size: 16,
+                                                            color: Color(
+                                                              int.tryParse(
+                                                                    app['color']?.replaceFirst('#', '') ?? 'FF4E9FFF',
+                                                                    radix: 16,
+                                                                  ) ??
+                                                                  0xFF4E9FFF,
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Expanded(
-                                                        child: Text(
-                                                          app['name'] ?? 'App',
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
+                                                        const SizedBox(width: 8),
+                                                        Expanded(
+                                                          child: Text(
+                                                            app['name'] ?? 'App',
+                                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
                                                         ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      app['status'] ?? 'Em construção',
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                        color: Theme.of(context).colorScheme.primary,
                                                       ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    app['status'] ??
-                                                        'Em construção',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.copyWith(
-                                                          color: Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                        ),
                                                     ),
                                                   ],
                                                 ),
                                               ),
                                             ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
