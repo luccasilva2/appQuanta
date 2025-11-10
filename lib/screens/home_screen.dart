@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../supabase_service.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
 
-  final SupabaseService _supabaseService = SupabaseService();
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -48,16 +48,13 @@ class _HomeScreenState extends State<HomeScreen>
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final apps = await _supabaseService.getUserApps(user.id);
+    final apps = await _apiService.getUserApps();
 
     if (apps.isEmpty) {
-      await _supabaseService.createApp(
-        userId: user.id,
+      await _apiService.createApp(
         name: 'Meu Primeiro App',
         description: 'App de exemplo criado automaticamente',
-        icon: 'default',
-        color: '#4E9FFF',
-        screens: ['Tela Inicial', 'Configurações'],
+        status: 'active',
       );
     }
   }
@@ -139,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: user == null
                           ? const Center(child: Text('Usuário não autenticado'))
                           : FutureBuilder<List<Map<String, dynamic>>>(
-                              future: _supabaseService.getUserApps(user.id),
+                              future: _apiService.getUserApps(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
                                   return Center(

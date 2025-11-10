@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lottie/lottie.dart';
-import '../supabase_service.dart';
+import '../services/api_service.dart';
 
 class CreateAppScreen extends StatefulWidget {
-  const CreateAppScreen({super.key}                                    );
+  const CreateAppScreen({super.key});
 
   @override
   State<CreateAppScreen> createState() => _CreateAppScreenState();
@@ -24,7 +23,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   Color _selectedColor = const Color(0xFF4E9FFF);
   final List<String> _selectedScreens = ['Home', 'About'];
 
-  final SupabaseService _supabaseService = SupabaseService();
+  final ApiService _apiService = ApiService();
 
   bool _isGenerating = false;
 
@@ -92,20 +91,14 @@ class _CreateAppScreenState extends State<CreateAppScreen>
     });
 
     try {
-      final user = _supabaseService.currentUser;
-      if (user == null) return;
-
       // Simulate generation delay
       await Future.delayed(const Duration(seconds: 2));
 
       // Create app via server
-      await _supabaseService.createApp(
-        userId: user.id,
+      await _apiService.createApp(
         name: _appNameController.text.trim(),
         description: _appDescriptionController.text.trim(),
-        icon: _selectedIcon,
-        color: '#${_selectedColor.value.toRadixString(16).padLeft(8, '0')}',
-        screens: _selectedScreens,
+        status: 'active',
       );
 
       if (mounted) {
@@ -116,7 +109,9 @@ class _CreateAppScreenState extends State<CreateAppScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar app: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao criar app: $e')));
       }
     } finally {
       if (mounted) {
@@ -130,10 +125,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Criar App'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Criar App'), elevation: 0),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -150,15 +142,16 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                       // Title
                       Text(
                         'Crie seu novo aplicativo',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Transforme sua ideia em realidade',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -180,7 +173,8 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                         maxLines: 3,
                         decoration: InputDecoration(
                           labelText: 'Descrição (opcional)',
-                          hintText: 'Descreva brevemente o propósito do seu app',
+                          hintText:
+                              'Descreva brevemente o propósito do seu app',
                           prefixIcon: Icon(PhosphorIcons.article()),
                         ),
                       ),
@@ -208,13 +202,17 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                               height: 80,
                               decoration: BoxDecoration(
                                 color: _selectedIcon == iconData['name']
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.1)
                                     : Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _selectedIcon == iconData['name']
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.outline.withOpacity(0.3),
                                   width: 2,
                                 ),
                               ),
@@ -330,7 +328,9 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                   : Icon(PhosphorIcons.sparkle()),
                               const SizedBox(width: 12),
                               Text(
-                                _isGenerating ? 'Criando estrutura...' : 'Gerar Estrutura',
+                                _isGenerating
+                                    ? 'Criando estrutura...'
+                                    : 'Gerar Estrutura',
                               ),
                             ],
                           ),
@@ -340,9 +340,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
 
                       // Recent Projects Section
                       FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _supabaseService.getUserApps(
-                          Supabase.instance.client.auth.currentUser?.id ?? '',
-                        ),
+                        future: _apiService.getUserApps(),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
                             return const SizedBox.shrink();
@@ -367,19 +365,20 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                       animation: _animationController,
                                       builder: (context, child) {
                                         final delay = index * 0.1;
-                                        final animation = Tween<double>(
-                                          begin: 0.0,
-                                          end: 1.0,
-                                        ).animate(
-                                          CurvedAnimation(
-                                            parent: _animationController,
-                                            curve: Interval(
-                                              delay,
-                                              delay + 0.3,
-                                              curve: Curves.easeOut,
-                                            ),
-                                          ),
-                                        );
+                                        final animation =
+                                            Tween<double>(
+                                              begin: 0.0,
+                                              end: 1.0,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: _animationController,
+                                                curve: Interval(
+                                                  delay,
+                                                  delay + 0.3,
+                                                  curve: Curves.easeOut,
+                                                ),
+                                              ),
+                                            );
                                         return Transform.translate(
                                           offset: Offset(
                                             50 * (1 - animation.value),
@@ -390,9 +389,12 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                             child: Card(
                                               child: Container(
                                                 width: 200,
-                                                padding: const EdgeInsets.all(16),
+                                                padding: const EdgeInsets.all(
+                                                  16,
+                                                ),
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Row(
                                                       children: [
@@ -402,47 +404,82 @@ class _CreateAppScreenState extends State<CreateAppScreen>
                                                           decoration: BoxDecoration(
                                                             color: Color(
                                                               int.tryParse(
-                                                                    app['color']?.replaceFirst('#', '') ?? 'FF4E9FFF',
+                                                                    app['color']
+                                                                            ?.replaceFirst(
+                                                                              '#',
+                                                                              '',
+                                                                            ) ??
+                                                                        'FF4E9FFF',
                                                                     radix: 16,
                                                                   ) ??
                                                                   0xFF4E9FFF,
                                                             ).withOpacity(0.1),
-                                                            borderRadius: BorderRadius.circular(8),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
                                                           ),
                                                           child: Icon(
                                                             _icons.firstWhere(
-                                                              (icon) => icon['name'] == app['icon'],
-                                                              orElse: () => _icons.first,
+                                                              (icon) =>
+                                                                  icon['name'] ==
+                                                                  app['icon'],
+                                                              orElse: () =>
+                                                                  _icons.first,
                                                             )['icon'],
                                                             size: 16,
                                                             color: Color(
                                                               int.tryParse(
-                                                                    app['color']?.replaceFirst('#', '') ?? 'FF4E9FFF',
+                                                                    app['color']
+                                                                            ?.replaceFirst(
+                                                                              '#',
+                                                                              '',
+                                                                            ) ??
+                                                                        'FF4E9FFF',
                                                                     radix: 16,
                                                                   ) ??
                                                                   0xFF4E9FFF,
                                                             ),
                                                           ),
                                                         ),
-                                                        const SizedBox(width: 8),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
                                                         Expanded(
                                                           child: Text(
-                                                            app['name'] ?? 'App',
-                                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                              fontWeight: FontWeight.w500,
-                                                            ),
+                                                            app['name'] ??
+                                                                'App',
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .bodyMedium
+                                                                ?.copyWith(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
                                                             maxLines: 1,
-                                                            overflow: TextOverflow.ellipsis,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           ),
                                                         ),
                                                       ],
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
-                                                      app['status'] ?? 'Em construção',
-                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                        color: Theme.of(context).colorScheme.primary,
-                                                      ),
+                                                      app['status'] ??
+                                                          'Em construção',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .primary,
+                                                          ),
                                                     ),
                                                   ],
                                                 ),

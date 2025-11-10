@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/api_service.dart';
 
 class MyAppsScreen extends StatefulWidget {
   const MyAppsScreen({super.key});
@@ -10,16 +11,10 @@ class MyAppsScreen extends StatefulWidget {
 }
 
 class _MyAppsScreenState extends State<MyAppsScreen> {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final ApiService _apiService = ApiService();
 
-  Future<PostgrestList> _fetchApps() async {
-    final user = _supabase.auth.currentUser;
-    final response = await _supabase
-        .from('apps')
-        .select()
-        .eq('user_id', user?.id ?? '')
-        .order('created_at', ascending: false);
-    return response;
+  Future<List<Map<String, dynamic>>> _fetchApps() async {
+    return await _apiService.getUserApps();
   }
 
   // Example apps data
@@ -72,7 +67,7 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FutureBuilder<PostgrestList>(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _fetchApps(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -88,7 +83,7 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final apps = snapshot.data as List<dynamic>? ?? [];
+                final apps = snapshot.data ?? [];
 
                 if (apps.isEmpty) {
                   return GridView.builder(
@@ -138,8 +133,6 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
       ),
     );
   }
-
-
 }
 
 class _AppCard extends StatelessWidget {
