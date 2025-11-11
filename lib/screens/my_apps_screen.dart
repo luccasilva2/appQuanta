@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
+import 'app_preview_screen.dart';
 
 class MyAppsScreen extends StatefulWidget {
   const MyAppsScreen({super.key});
@@ -124,13 +125,6 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/create');
-        },
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: Icon(PhosphorIcons.plus()),
-      ),
     );
   }
 }
@@ -190,7 +184,15 @@ class _AppCard extends StatelessWidget {
                   ),
                 );
               }
-            : null,
+            : () {
+                // Navigate to preview screen for real apps
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AppPreviewScreen(appData: appData),
+                  ),
+                );
+              },
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(16),

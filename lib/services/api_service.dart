@@ -162,4 +162,65 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  // GET /apps/{id}/preview - Get app preview URL
+  Future<String> getPreviewUrl(String appId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/apps/$appId/preview'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        // Return the URL that serves the HTML preview
+        return '$baseUrl/apps/$appId/preview';
+      }
+      throw Exception('Failed to get preview: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // POST /apps/{id}/generate-apk - Generate APK
+  Future<Map<String, dynamic>> generateApk(String appId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/apps/$appId/generate-apk'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return Map<String, dynamic>.from(data['data']);
+        }
+      }
+      throw Exception('Failed to generate APK: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // GET /apps/{id}/apk-status - Get APK generation status
+  Future<Map<String, dynamic>> getApkStatus(String appId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/apps/$appId/apk-status'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return Map<String, dynamic>.from(data['data']);
+        }
+      }
+      throw Exception('Failed to get APK status: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }
