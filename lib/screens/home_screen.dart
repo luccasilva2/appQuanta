@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lottie/lottie.dart';
 import '../services/api_service.dart';
 import 'app_preview_screen.dart';
 
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final userName = user?.userMetadata?['display_name'] ?? 'Usuário';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
@@ -52,30 +54,118 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [const Color(0xFFF5F5F5), Colors.white],
+            colors: isDarkMode
+                ? [
+                    Theme.of(context).colorScheme.surface,
+                    Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  ]
+                : [const Color(0xFFF5F5F5), Colors.white],
           ),
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Personalized greeting
-                Text(
-                  'Bem-vindo de volta, $userName',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                // Personalized greeting with animation
+                AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bem-vindo de volta, $userName',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Pronto para criar algo incrível hoje?',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 32),
+
+                // Quick Actions Section
                 Text(
-                  'Pronto para criar algo incrível hoje?',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
-                  ),
+                  'Ações Rápidas',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _QuickActionCard(
+                      icon: PhosphorIcons.plus(),
+                      title: 'Novo App',
+                      subtitle: 'Criar aplicativo',
+                      onTap: () {
+                        Navigator.pushNamed(context, '/create');
+                      },
+                    ),
+                    _QuickActionCard(
+                      icon: PhosphorIcons.palette(),
+                      title: 'Templates',
+                      subtitle: 'Usar modelo',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Templates em breve!')),
+                        );
+                      },
+                    ),
+                    _QuickActionCard(
+                      icon: PhosphorIcons.appWindow(),
+                      title: 'Meus Apps',
+                      subtitle: 'Ver todos os apps',
+                      onTap: () {
+                        Navigator.pushNamed(context, '/my-apps');
+                      },
+                    ),
+                    _QuickActionCard(
+                      icon: PhosphorIcons.gear(),
+                      title: 'Configurações',
+                      subtitle: 'Ajustes do app',
+                      onTap: () {
+                        Navigator.pushNamed(context, '/settings');
+                      },
+                    ),
+                    _QuickActionCard(
+                      icon: PhosphorIcons.question(),
+                      title: 'Ajuda',
+                      subtitle: 'Tutoriais e suporte',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Central de ajuda em breve!'),
+                          ),
+                        );
+                      },
+                    ),
+                    _QuickActionCard(
+                      icon: PhosphorIcons.chartBar(),
+                      title: 'Estatísticas',
+                      subtitle: 'Análise de uso',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Estatísticas em breve!'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
 
@@ -98,44 +188,45 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Apps list from server
-                Expanded(
-                  child: user == null
-                      ? const Center(child: Text('Usuário não autenticado'))
-                      : FutureBuilder<List<Map<String, dynamic>>>(
-                          future: _appsFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Text(
-                                  'Erro ao carregar apps: ${snapshot.error}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              );
-                            }
-
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-
-                            final apps = snapshot.data ?? [];
-
-                            if (apps.isEmpty) {
-                              return _buildEmptyState();
-                            }
-
-                            return ListView.builder(
-                              itemCount: apps.length,
-                              itemBuilder: (context, index) {
-                                final app = apps[index];
-                                return _AppCard(app: app);
-                              },
+                user == null
+                    ? const Center(child: Text('Usuário não autenticado'))
+                    : FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _appsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Text(
+                                'Erro ao carregar apps: ${snapshot.error}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             );
-                          },
-                        ),
-                ),
+                          }
+
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          final apps = snapshot.data ?? [];
+
+                          if (apps.isEmpty) {
+                            return _buildEmptyState();
+                          }
+
+                          return ListView.builder(
+                            itemCount: apps.length,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final app = apps[index];
+                              return _AppCard(app: app);
+                            },
+                          );
+                        },
+                      ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -169,6 +260,132 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionCard> createState() => _QuickActionCardState();
+}
+
+class _QuickActionCardState extends State<_QuickActionCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _animationController.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _animationController.reverse();
+  }
+
+  void _onTapCancel() {
+    _animationController.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.title,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),

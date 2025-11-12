@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
 import 'dart:ui';
 import '../supabase_service.dart';
+import '../providers/app_provider.dart';
 
 class ParticlePainter extends CustomPainter {
   final double animationValue;
@@ -67,11 +69,18 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    _isDarkMode =
+        appProvider.themeMode == ThemeMode.dark ||
+        (appProvider.themeMode == ThemeMode.system &&
+            Theme.of(context).brightness == Brightness.dark);
   }
 
-
-
+  @override
+  void dispose() {
+    _particleController.dispose();
+    super.dispose();
+  }
 
   Future<void> _confirmLogout() async {
     final bool? confirm = await showDialog<bool>(
@@ -101,7 +110,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (confirm == true) {
       await _supabaseService.signOut();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
   }
@@ -149,7 +160,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
-                              child: CircularProgressIndicator());
+                            child: CircularProgressIndicator(),
+                          );
                         }
                         return Center(
                           child: Column(
@@ -159,7 +171,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   // Profile image upload disabled
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Upload de imagem desabilitado'),
+                                      content: Text(
+                                        'Upload de imagem desabilitado',
+                                      ),
                                     ),
                                   );
                                 },
@@ -168,29 +182,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   height: 120,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .shadow
-                                            .withOpacity(0.3),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.shadow.withOpacity(0.3),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
                                       BoxShadow(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withOpacity(0.2),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.2),
                                         blurRadius: 10,
                                         offset: const Offset(0, 5),
                                       ),
                                     ],
                                   ),
-                                  child: user?.userMetadata?['avatar_url'] != null
+                                  child:
+                                      user?.userMetadata?['avatar_url'] != null
                                       ? ClipOval(
                                           child: Image.network(
                                             user!.userMetadata!['avatar_url'],
@@ -199,43 +212,41 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
-                                              return Icon(
-                                                PhosphorIcons.user(),
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary,
-                                                size: 60,
-                                              );
-                                            },
+                                                  return Icon(
+                                                    PhosphorIcons.user(),
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onPrimary,
+                                                    size: 60,
+                                                  );
+                                                },
                                           ),
                                         )
                                       : Icon(
                                           PhosphorIcons.user(),
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
                                           size: 60,
                                         ),
                                 ),
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                user?.userMetadata?['display_name'] ?? 'Usuário AppQuanta',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium,
+                                user?.userMetadata?['display_name'] ??
+                                    'Usuário AppQuanta',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 user?.email ?? 'usuario@appquanta.com',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
+                                style: Theme.of(context).textTheme.bodyLarge
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.8),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.8),
                                     ),
                               ),
                             ],
@@ -259,16 +270,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.8),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outline
-                                .withOpacity(0.2),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
@@ -278,10 +287,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -299,10 +307,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             Icon(
                               PhosphorIcons.caretRight(),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                             ),
                           ],
                         ),
@@ -314,16 +321,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surface
-                            .withOpacity(0.8),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surface.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withOpacity(0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withOpacity(0.2),
                           width: 1,
                         ),
                       ),
@@ -336,8 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 _isDarkMode
                                     ? PhosphorIcons.moon()
                                     : PhosphorIcons.sun(),
-                                color:
-                                    Theme.of(context).colorScheme.onSurface,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               const SizedBox(width: 12),
                               Text(
@@ -353,16 +357,71 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 _isDarkMode = value;
                               });
                               widget.onThemeChanged(
-                                _isDarkMode
-                                    ? ThemeMode.dark
-                                    : ThemeMode.light,
+                                _isDarkMode ? ThemeMode.dark : ThemeMode.light,
                               );
                             },
-                            activeThumbColor:
-                                Theme.of(context).colorScheme.primary,
+                            activeThumbColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                           ),
                         ],
                       ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // === MODO PRETO E BRANCO ===
+                    Consumer<AppProvider>(
+                      builder: (context, appProvider, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    appProvider.isGrayscaleMode
+                                        ? PhosphorIcons.eyeClosed()
+                                        : PhosphorIcons.eye(),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Modo Preto e Branco',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge,
+                                  ),
+                                ],
+                              ),
+                              Switch(
+                                value: appProvider.isGrayscaleMode,
+                                onChanged: (value) {
+                                  appProvider.toggleGrayscaleMode();
+                                },
+                                activeThumbColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 16),
@@ -381,17 +440,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                         icon: Icon(PhosphorIcons.pencil()),
                         label: const Text('Editar Perfil'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.8),
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onSurface,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
@@ -414,41 +472,34 @@ class _ProfileScreenState extends State<ProfileScreen>
                         duration: const Duration(milliseconds: 300),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.9),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outline
-                                .withOpacity(0.2),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
                         child: Column(
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   'O que é o AppQuanta?',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 Icon(
                                   _isAboutExpanded
                                       ? PhosphorIcons.caretUp()
                                       : PhosphorIcons.caretDown(),
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ],
                             ),
@@ -456,14 +507,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                               const SizedBox(height: 16),
                               Text(
                                 'AppQuanta é uma plataforma inovadora que permite criar, personalizar e visualizar aplicativos de forma intuitiva e elegante. Com foco na experiência do usuário, oferecemos ferramentas poderosas para transformar suas ideias em realidade digital.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.8),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.8),
                                     ),
                                 textAlign: TextAlign.justify,
                               ),
@@ -474,14 +522,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 '• Personalização avançada\n'
                                 '• Pré-visualização em tempo real\n'
                                 '• Suporte multiplataforma',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.8),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.8),
                                     ),
                               ),
                             ],
@@ -500,15 +545,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         icon: Icon(PhosphorIcons.signOut()),
                         label: const Text('Sair da Conta'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.error,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onError,
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onError,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
@@ -520,11 +564,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       child: Text(
                         'Versão 1.0.0',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
                     ),
                   ],

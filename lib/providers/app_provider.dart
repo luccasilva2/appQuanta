@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class AppProvider with ChangeNotifier {
@@ -7,10 +8,14 @@ class AppProvider with ChangeNotifier {
   List<Map<String, dynamic>> _apps = [];
   bool _isLoading = false;
   String? _error;
+  ThemeMode _themeMode = ThemeMode.system;
+  bool _isGrayscaleMode = false;
 
   List<Map<String, dynamic>> get apps => _apps;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  ThemeMode get themeMode => _themeMode;
+  bool get isGrayscaleMode => _isGrayscaleMode;
 
   // Load user apps
   Future<void> loadApps() async {
@@ -114,6 +119,18 @@ class AppProvider with ChangeNotifier {
   // Clear error
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  // Set theme mode
+  void setThemeMode(ThemeMode mode) {
+    _themeMode = mode;
+    notifyListeners();
+  }
+
+  // Toggle grayscale mode
+  void toggleGrayscaleMode() {
+    _isGrayscaleMode = !_isGrayscaleMode;
     notifyListeners();
   }
 }

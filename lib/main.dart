@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:lottie/lottie.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/main_navigation_screen.dart';
@@ -7,6 +10,7 @@ import 'screens/create_app_screen.dart';
 import 'screens/my_apps_screen.dart';
 import 'screens/settings_screen.dart';
 import 'theme/app_theme.dart';
+import 'providers/app_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,41 +30,109 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'AppQuanta',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const SupabaseInitializer(),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/login':
-            return MaterialPageRoute(builder: (context) => const LoginScreen());
-          case '/register':
-            return MaterialPageRoute(
-              builder: (context) => const RegisterScreen(),
-            );
-          case '/main':
-            return MaterialPageRoute(
-              builder: (context) => const MainNavigationScreen(),
-            );
-          case '/create':
-            return MaterialPageRoute(
-              builder: (context) => const CreateAppScreen(),
-            );
-          case '/my-apps':
-            return MaterialPageRoute(
-              builder: (context) => const MyAppsScreen(),
-            );
-          case '/settings':
-            return MaterialPageRoute(
-              builder: (context) => const SettingsScreen(),
-            );
-          default:
-            return null;
-        }
-      },
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AppProvider())],
+      child: Consumer<AppProvider>(
+        builder: (context, appProvider, child) {
+          return ColorFiltered(
+            colorFilter: appProvider.isGrayscaleMode
+                ? const ColorFilter.matrix([
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                  ])
+                : const ColorFilter.matrix([
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                  ]),
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'AppQuanta',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: appProvider.themeMode,
+              home: const SupabaseInitializer(),
+              onGenerateRoute: (settings) {
+                switch (settings.name) {
+                  case '/login':
+                    return PageTransition(
+                      child: const LoginScreen(),
+                      type: PageTransitionType.fade,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  case '/register':
+                    return PageTransition(
+                      child: const RegisterScreen(),
+                      type: PageTransitionType.fade,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  case '/main':
+                    return PageTransition(
+                      child: const MainNavigationScreen(),
+                      type: PageTransitionType.fade,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  case '/create':
+                    return PageTransition(
+                      child: const CreateAppScreen(),
+                      type: PageTransitionType.rightToLeft,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  case '/my-apps':
+                    return PageTransition(
+                      child: const MyAppsScreen(),
+                      type: PageTransitionType.rightToLeft,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  case '/settings':
+                    return PageTransition(
+                      child: const SettingsScreen(),
+                      type: PageTransitionType.rightToLeft,
+                      duration: const Duration(milliseconds: 300),
+                    );
+                  default:
+                    return null;
+                }
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

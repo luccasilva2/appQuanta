@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:page_transition/page_transition.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../providers/app_provider.dart';
 import 'home_screen.dart';
 import 'my_apps_screen.dart';
 import 'profile_screen.dart';
@@ -68,9 +71,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   }
 
   void _onThemeChanged(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    appProvider.setThemeMode(mode);
   }
 
   @override
