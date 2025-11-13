@@ -108,10 +108,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ],
                     ),
-                    child: Icon(
-                      PhosphorIcons.appWindow(),
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      size: 50,
+                    child: Image.asset(
+                      'assets/logo2.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 40),

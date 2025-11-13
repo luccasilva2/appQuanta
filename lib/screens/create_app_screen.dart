@@ -20,7 +20,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   final TextEditingController _appDescriptionController =
       TextEditingController();
   String _selectedIcon = 'app';
-  Color _selectedColor = const Color(0xFF4E9FFF);
+  Color _selectedColor = const Color(0xFFFF6B35);
   final List<String> _selectedScreens = ['Home', 'About'];
 
   final ApiService _apiService = ApiService();
@@ -35,7 +35,7 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   ];
 
   final List<Color> _colors = [
-    const Color(0xFF4E9FFF), // Electric Blue
+    const Color(0xFFFF6B35), // Orange Primary
     const Color(0xFF28A745), // Green
     const Color(0xFFDC3545), // Red
     const Color(0xFFFFC107), // Yellow
@@ -125,7 +125,21 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Criar App'), elevation: 0),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/logo1.png',
+              width: 30,
+              height: 30,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text('Criar App'),
+          ],
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,

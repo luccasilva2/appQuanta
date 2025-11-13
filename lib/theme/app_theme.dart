@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // New color palette - neutral grays with electric blue accents
+  // New color palette - neutral grays with orange accents
   static const Color backgroundLight = Color(0xFFF5F5F5);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color textDark = Color(0xFF1E1E1E);
   static const Color textGray = Color(0xFF6B7280);
-  static const Color electricBlue = Color(0xFF4E9FFF);
+  static const Color orangePrimary = Color(0xFFFF6B35); // Vibrant orange
+  static const Color orangeSecondary = Color(0xFFFF8C42); // Lighter orange
   static const Color secondaryGray = Color(0xFFE0E0E0);
   static const Color shadowColor = Color(0x1A000000);
 
@@ -19,11 +20,11 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    primaryColor: electricBlue,
+    primaryColor: orangePrimary,
     scaffoldBackgroundColor: backgroundLight,
     colorScheme: const ColorScheme.light(
-      primary: electricBlue,
-      secondary: secondaryGray,
+      primary: orangePrimary,
+      secondary: orangeSecondary,
       surface: surfaceLight,
       onSurface: textDark,
       onPrimary: Colors.white,
@@ -69,7 +70,7 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: electricBlue,
+        backgroundColor: orangePrimary,
         foregroundColor: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -80,8 +81,8 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: electricBlue,
-        side: const BorderSide(color: electricBlue, width: 1.5),
+        foregroundColor: orangePrimary,
+        side: const BorderSide(color: orangePrimary, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
@@ -107,7 +108,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: electricBlue, width: 2),
+        borderSide: const BorderSide(color: orangePrimary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       labelStyle: GoogleFonts.inter(
@@ -123,7 +124,7 @@ class AppTheme {
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: surfaceLight,
-      selectedItemColor: electricBlue,
+      selectedItemColor: orangePrimary,
       unselectedItemColor: textGray,
       selectedLabelStyle: GoogleFonts.inter(
         fontSize: 12,
@@ -153,11 +154,11 @@ class AppTheme {
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: electricBlue,
+    primaryColor: orangePrimary,
     scaffoldBackgroundColor: backgroundDark,
     colorScheme: const ColorScheme.dark(
-      primary: electricBlue,
-      secondary: secondaryGray,
+      primary: orangePrimary,
+      secondary: orangeSecondary,
       surface: surfaceDark,
       onSurface: textLight,
       onPrimary: Colors.white,
@@ -203,7 +204,7 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: electricBlue,
+        backgroundColor: orangePrimary,
         foregroundColor: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -214,8 +215,8 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: electricBlue,
-        side: const BorderSide(color: electricBlue, width: 1.5),
+        foregroundColor: orangePrimary,
+        side: const BorderSide(color: orangePrimary, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500),
@@ -241,7 +242,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: electricBlue, width: 2),
+        borderSide: const BorderSide(color: orangePrimary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       labelStyle: GoogleFonts.inter(
@@ -257,7 +258,7 @@ class AppTheme {
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: surfaceDark,
-      selectedItemColor: electricBlue,
+      selectedItemColor: orangePrimary,
       unselectedItemColor: textGray,
       selectedLabelStyle: GoogleFonts.inter(
         fontSize: 12,

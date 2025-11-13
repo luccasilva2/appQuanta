@@ -50,7 +50,18 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meus Apps'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/logo1.png',
+              width: 30,
+              height: 30,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text('Meus Apps'),
+          ],
+        ),
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
