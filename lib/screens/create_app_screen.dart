@@ -28,10 +28,14 @@ class _CreateAppScreenState extends State<CreateAppScreen>
   bool _isGenerating = false;
 
   final List<Map<String, dynamic>> _icons = [
-    {'name': 'app', 'icon': PhosphorIcons.appWindow()},
-    {'name': 'game', 'icon': PhosphorIcons.gameController()},
-    {'name': 'shopping', 'icon': PhosphorIcons.shoppingBag()},
-    {'name': 'chat', 'icon': PhosphorIcons.chat()},
+    {'name': 'app', 'icon': PhosphorIcons.appWindow(), 'type': 'app'},
+    {'name': 'game', 'icon': PhosphorIcons.gameController(), 'type': 'game'},
+    {
+      'name': 'shopping',
+      'icon': PhosphorIcons.shoppingBag(),
+      'type': 'shopping',
+    },
+    {'name': 'chat', 'icon': PhosphorIcons.chat(), 'type': 'chat'},
   ];
 
   final List<Color> _colors = [
@@ -95,10 +99,17 @@ class _CreateAppScreenState extends State<CreateAppScreen>
       await Future.delayed(const Duration(seconds: 2));
 
       // Create app via server
+      final selectedIconData = _icons.firstWhere(
+        (icon) => icon['name'] == _selectedIcon,
+      );
       await _apiService.createApp(
         name: _appNameController.text.trim(),
         description: _appDescriptionController.text.trim(),
         status: 'active',
+        icon: _selectedIcon,
+        color: '#${_selectedColor.value.toRadixString(16).substring(2)}',
+        screens: _selectedScreens,
+        type: selectedIconData['type'],
       );
 
       if (mounted) {

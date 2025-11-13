@@ -80,6 +80,10 @@ class ApiService {
     required String name,
     String? description,
     required String status,
+    String? icon,
+    String? color,
+    List<String>? screens,
+    String? type,
   }) async {
     try {
       final headers = await _getHeaders();
@@ -87,6 +91,10 @@ class ApiService {
         'name': name,
         'description': description,
         'status': status,
+        if (icon != null) 'icon': icon,
+        if (color != null) 'color': color,
+        if (screens != null) 'screens': screens,
+        if (type != null) 'type': type,
       });
 
       final response = await http.post(

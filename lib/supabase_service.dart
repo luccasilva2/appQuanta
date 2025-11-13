@@ -155,9 +155,11 @@ class SupabaseService {
     required String userId,
     required String name,
     required String description,
-    required String icon,
-    required String color,
-    required List<String> screens,
+    required String status, // Ajustado para o modelo do servidor
+    String? icon,
+    String? color,
+    List<String>? screens,
+    String? type,
   }) async {
     try {
       // Refresh session to ensure token is valid
@@ -179,7 +181,11 @@ class SupabaseService {
         body: jsonEncode({
           'name': name,
           'description': description,
-          'status': 'active', // Ajustado para o modelo do servidor
+          'status': status,
+          if (icon != null) 'icon': icon,
+          if (color != null) 'color': color,
+          if (screens != null) 'screens': screens,
+          if (type != null) 'type': type,
         }),
       );
 

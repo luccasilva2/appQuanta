@@ -175,6 +175,13 @@ class _SupabaseInitializerState extends State<SupabaseInitializer> {
     if (!_isReady) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    // Check if user is already logged in
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      return const MainNavigationScreen();
+    }
+
     return const LoginScreen();
   }
 }
